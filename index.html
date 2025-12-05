@@ -295,21 +295,40 @@
             document.getElementById('mnemonic-modal').classList.add('hidden');
         }
 
-        async function handleResetPassword(email) {
-            const mnemonic = document.getElementById('recovery-mnemonic').value.trim();
-            const newPwd = document.getElementById('new-password').value;
-            if(!mnemonic || !newPwd) throw new Error('請填寫助記詞與新密碼');
+    async function handleResetPassword(email) {
+                // 1. 強制去除前後空白
+                const safeEmail = email.trim(); 
+                const mnemonic = document.getElementById('recovery-mnemonic').value.trim();
+                const newPwd = document.getElementById('new-password').value;
+                
+                if(!mnemonic || !newPwd) throw new Error('請填寫助記詞與新密碼');
 
-            // [修正] 使用 sbClient
-            const { data, error } = await sbClient.rpc('reset_password_via_mnemonic', {
-                target_email: email, mnemonic_check: mnemonic, new_password: newPwd
-            });
-            if(error || !data) throw new Error('重設失敗：助記詞錯誤或帳號不存在');
-            
-            showMsg('密碼已重設，請登入', false);
-            setTimeout(() => setAuthMode('login'), 1500);
-        }
+                console.log("正在嘗試重設...");
+                console.log("Email:", safeEmail);
+                console.log("Mnemonic:", mnemonic);
 
+                // 呼叫 RPC
+                const { data, error } = await sbClient.rpc('reset_password_via_mnemonic', {
+                    target_email: safeEmail, 
+                    mnemonic_check: mnemonic, 
+                    new_password: newPwd
+                });
+
+                // 詳細錯誤處理
+                if (error) {
+                    console.error("RPC Error:", error);
+                    throw new Error('系統錯誤: ' + error.message);
+                }
+                
+                // data 為 false 代表 SQL 內的 if 判斷沒過
+                if (data === false) {
+                    console.error("RPC 回傳 False。原因可能是：Email 沒對上，或是助記詞沒對上。");
+                    throw new Error('重設失敗：助記詞錯誤或帳號不存在 (請檢查資料庫 profiles 表格是否有值)');
+                }
+                
+                showMsg('密碼已重設，請登入', false);
+                setTimeout(() => setAuthMode('login'), 1500);
+            }
         async function loadProfile(uid) {
             const { data, error } = await sbClient.from('profiles').select('*').eq('id', uid).single();
             if(error) { sbClient.auth.signOut(); return; }
