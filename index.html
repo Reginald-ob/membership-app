@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>會員積分管理系統 Pro</title>
+    <title>冠軍永安羽球館|會員專區 Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
@@ -356,6 +356,14 @@
         </div>
     </div>
 
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert-modal" class="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full text-center">
+            <p id="custom-alert-message" class="text-gray-700 mb-4"></p>
+            <button onclick="closeCustomAlert()" class="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold text-sm">確認</button>
+        </div>
+    </div>
+
     <input type="hidden" id="hidden-uid">
     <input type="hidden" id="hidden-display-id">
 
@@ -449,30 +457,28 @@
                     if (authMode === 'login') {
                         const { error } = await sbClient.auth.signInWithPassword({ email, password: pwd });
                         if(error) throw error;
+                        // 登入成功，onAuthStateChange 會處理跳轉
                     } else if (authMode === 'register') {
                         await handleRegister(email, pwd);
+                        // 註冊成功，onAuthStateChange 會處理跳轉
                     } else if (authMode === 'forgot') {
                         await handleResetPassword(email);
                     }
                 } catch (err) {
                     showMsg(err.message, true);
                 } finally {
-                    btn.disabled = false; btn.innerText = authMode === 'login' ? '登入' : '送出';
+                    // 登入和註冊成功時，不應執行此處的 button 恢復，因為頁面會跳轉
+                    if (authMode === 'forgot') {
+                        btn.disabled = false; btn.innerText = '重設並登入';
+                    } else if (authMode === 'login' || authMode === 'register') {
+                        // 如果有錯誤發生，再恢復按鈕狀態
+                        if (document.getElementById('auth-message').classList.contains('bg-red-100')) {
+                            btn.disabled = false; 
+                            btn.innerText = authMode === 'login' ? '登入' : '確認註冊';
+                        }
+                    }
                 }
             };
-
-            // Admin Search Clear Button
-            const searchInput = document.getElementById('admin-search');
-            const clearBtn = document.getElementById('clear-search');
-            searchInput.addEventListener('input', (e) => {
-                clearBtn.classList.toggle('hidden', !e.target.value);
-                filterUsers(e.target.value);
-            });
-            clearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                clearBtn.classList.add('hidden');
-                filterUsers('');
-            });
         }
 
         // Fetch BIP39 words from GitHub
@@ -512,7 +518,10 @@
             
             // 2. 註冊 Supabase
             const { data, error } = await sbClient.auth.signUp({ email, password });
-            if(error) throw error;
+            if(error) {
+                document.getElementById('mnemonic-modal').classList.add('hidden'); // 註冊失敗，關閉助記詞 Modal
+                throw error;
+            }
 
             // 3. 寫入 Profiles
             const { error: pErr } = await sbClient.from('profiles').insert([{
@@ -523,11 +532,18 @@
                 mnemonic: mnemonic, 
                 email: email
             }]);
-            if(pErr) throw pErr;
+            if(pErr) {
+                // 如果 Profile 寫入失敗，應該登出，避免資料不一致
+                await sbClient.auth.signOut();
+                document.getElementById('mnemonic-modal').classList.add('hidden');
+                throw pErr;
+            }
+            // 註冊成功，保留 Modal，onAuthStateChange 會在使用者關閉 Modal 後觸發 loadProfile
         }
 
         function closeMnemonicModal() {
             document.getElementById('mnemonic-modal').classList.add('hidden');
+            // 當用戶關閉 Modal 時，如果已經註冊成功，onAuthStateChange 應該已經完成，會跳轉到主頁面
         }
 
         async function handleResetPassword(email) {
@@ -551,8 +567,14 @@
         }
 
         async function loadProfile(uid) {
+            // 確認 Supabase 連線後，檢查 Profile
             const { data, error } = await sbClient.from('profiles').select('*').eq('id', uid).single();
-            if(error) { sbClient.auth.signOut(); return; }
+            if(error) { 
+                console.error('Failed to load profile:', error);
+                // 找不到 Profile，可能資料不完整，強制登出讓使用者重新註冊或登入
+                await sbClient.auth.signOut(); 
+                return; 
+            }
             if(data.role === 'admin') { 
                 switchView('admin'); 
                 fetchUsers(); 
@@ -572,14 +594,25 @@
             const points = p.points || 0;
             const twd = Math.floor(points * 0.5);
             
-            document.getElementById('user-points-display').innerText = points;
-            document.getElementById('user-points-twd').innerText = twd;
+            // 修正: 增加空值檢查以避免 'Cannot set properties of null' 錯誤
+            const pointsDisplay = document.getElementById('user-points-display');
+            if (pointsDisplay) pointsDisplay.innerText = points;
+
+            const twdDisplay = document.getElementById('user-points-twd');
+            if (twdDisplay) twdDisplay.innerText = twd; 
 
             // 2. 基本資料
-            document.getElementById('user-id-display').innerText = p.user_id_display;
-            document.getElementById('user-name-display').innerText = p.full_name;
-            document.getElementById('user-email-display').innerText = currentUser.email;
-            document.getElementById('user-phone-display').innerText = p.phone;
+            const idDisplay = document.getElementById('user-id-display');
+            if (idDisplay) idDisplay.innerText = p.user_id_display;
+            
+            const nameDisplay = document.getElementById('user-name-display');
+            if (nameDisplay) nameDisplay.innerText = p.full_name;
+            
+            const emailDisplay = document.getElementById('user-email-display');
+            if (emailDisplay) emailDisplay.innerText = currentUser.email;
+            
+            const phoneDisplay = document.getElementById('user-phone-display');
+            if (phoneDisplay) phoneDisplay.innerText = p.phone;
         }
 
         async function fetchUserLogs(uid) {
@@ -744,8 +777,8 @@
             const totalAmount = parseInt(document.getElementById('trans-total').value);
             const pointsToAdd = parseInt(document.getElementById('trans-calc-points').innerText);
 
-            if(!product) return alert('請輸入產品名稱');
-            if(!totalAmount || totalAmount <= 0) return alert('請輸入有效金額');
+            if(!product) return showCustomAlert('請輸入產品名稱');
+            if(!totalAmount || totalAmount <= 0) return showCustomAlert('請輸入有效金額');
 
             // 組合備註字串：[A類] 拿鐵咖啡 $100
             const reason = `[${category}類] ${product} $${totalAmount}`;
@@ -764,11 +797,11 @@
 
                 if(error) throw error;
 
-                alert('交易成功！已發送 ' + pointsToAdd + ' 點');
+                showCustomAlert('交易成功！已發送 ' + pointsToAdd + ' 點');
                 closeAdminModal();
                 fetchUsers(); // Refresh list
             } catch(err) {
-                alert('交易失敗：' + err.message);
+                showCustomAlert('交易失敗：' + err.message);
             } finally {
                 btn.disabled = false; btn.innerText = '確認交易並發送點數';
             }
@@ -780,7 +813,7 @@
                 full_name: document.getElementById('edit-name').value,
                 phone: document.getElementById('edit-phone').value
             }).eq('id', uid);
-            if(error) alert('失敗'); else { alert('資料已更新'); closeAdminModal(); fetchUsers(); }
+            if(error) showCustomAlert('儲存失敗'); else { showCustomAlert('資料已更新'); closeAdminModal(); fetchUsers(); }
         }
 
         function showMsg(text, isError) {
@@ -788,6 +821,16 @@
             el.innerText = text;
             el.className = `mb-4 text-sm text-center p-2 rounded ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
             el.classList.remove('hidden');
+        }
+
+        // Custom Alert Functions (取代所有 alert())
+        window.showCustomAlert = function(message) {
+            document.getElementById('custom-alert-message').innerText = message;
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+
+        window.closeCustomAlert = function() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
         }
     </script>
 </body>
