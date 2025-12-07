@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會員積分管理系統</title>
-    <!-- Tailwind CSS (忽略 Production 警告) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>會員積分管理系統 Pro</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,15 +12,23 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; }
-        .user-grid { display: grid; grid-template-rows: 1fr 2fr; height: 100vh; }
+        body { font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        /* 隱藏滾動條但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hidden { display: none !important; }
-        input, select, textarea { font-size: 16px; }
+        
+        /* 底部導覽列動畫 */
+        .nav-item.active { color: #4f46e5; }
+        .nav-item.active i { font-weight: bold; transform: scale(1.1); transition: transform 0.2s; }
+        
+        /* 用戶頁面佈局調整 */
+        .user-content-area { padding-bottom: 80px; /* 避開底部導覽列 */ }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
+<body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
 
-    <!-- Config Overlay -->
+    <!-- Config Overlay (未設定 Supabase 時顯示) -->
     <div id="config-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex items-center justify-center">
         <div class="bg-white p-8 rounded shadow-lg max-w-md text-center">
             <h2 class="text-xl font-bold mb-4 text-red-600">系統尚未設定</h2>
@@ -28,9 +36,11 @@
         </div>
     </div>
 
-    <!-- 1. Auth View -->
-    <div id="auth-view" class="h-full flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm relative">
+    <!-- ========================================== -->
+    <!-- 1. Auth View (登入/註冊)                   -->
+    <!-- ========================================== -->
+    <div id="auth-view" class="h-full flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm relative my-auto">
             <h1 id="auth-title" class="text-2xl font-bold text-center mb-6 text-gray-800">會員登入</h1>
             <div id="auth-message" class="mb-4 text-sm text-center hidden p-2 rounded"></div>
             
@@ -62,7 +72,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">助記詞</label>
-                        <input type="text" id="recovery-mnemonic" placeholder="apple-banana-..." class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
+                        <input type="text" id="recovery-mnemonic" placeholder="apple banana ..." class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">新密碼</label>
@@ -83,97 +93,271 @@
         </div>
     </div>
 
-    <!-- 2. Mnemonic Modal -->
+    <!-- 2. Mnemonic Modal (助記詞顯示) -->
     <div id="mnemonic-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 text-center">
             <div class="text-5xl text-yellow-500 mb-4 flex justify-center"><i class="ph ph-shield-warning"></i></div>
             <h2 class="text-xl font-bold text-red-600 mb-2">請抄寫助記詞</h2>
-            <p class="text-sm text-gray-600 mb-4 text-left">這是找回帳號的唯一方式，請務必記錄。</p>
-            <div class="bg-gray-100 p-4 rounded border-2 border-dashed border-gray-400 mb-6">
-                <code id="generated-mnemonic" class="text-lg font-mono font-bold text-indigo-700 break-all select-all"></code>
+            <p class="text-sm text-gray-600 mb-4 text-left">這是找回帳號的唯一方式。請依序記錄以下單字：</p>
+            <div class="bg-gray-100 p-4 rounded border-2 border-dashed border-gray-400 mb-6 relative">
+                <div id="mnemonic-loading" class="text-gray-500 text-sm">正在從安全資料庫生成...</div>
+                <code id="generated-mnemonic" class="text-lg font-mono font-bold text-indigo-700 break-all select-all hidden"></code>
             </div>
             <button onclick="closeMnemonicModal()" class="w-full py-2 bg-red-600 text-white rounded hover:bg-red-700 font-bold">我已抄寫</button>
         </div>
     </div>
 
-    <!-- 3. User View -->
-    <div id="user-view" class="user-grid hidden bg-white">
-        <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 flex flex-col items-center justify-center text-white relative">
-            <button onclick="handleLogout()" class="absolute top-4 right-4 text-xs bg-black bg-opacity-20 px-3 py-1 rounded hover:bg-opacity-40">登出</button>
-            <h2 class="text-sm uppercase tracking-widest opacity-70 mb-1">Total Points</h2>
-            <div class="text-7xl font-bold font-mono tracking-tighter" id="user-points-display">0</div>
-        </div>
-        <div class="bg-gray-50 p-8 flex flex-col">
-            <div class="max-w-md mx-auto w-full space-y-6">
-                <h3 class="text-lg font-bold text-gray-800 border-b pb-2">會員資訊</h3>
-                <div class="grid grid-cols-3 gap-y-4 text-sm">
-                    <div class="text-gray-500">編號</div> <div id="user-id-display" class="font-bold text-gray-900 col-span-2 font-mono">...</div>
-                    <div class="text-gray-500">姓名</div> <div id="user-name-display" class="font-bold text-gray-900 col-span-2">...</div>
-                    <div class="text-gray-500">帳號</div> <div id="user-email-display" class="font-bold text-gray-900 col-span-2 break-all">...</div>
-                    <div class="text-gray-500">電話</div> <div id="user-phone-display" class="font-bold text-gray-900 col-span-2">...</div>
-                    <div class="text-gray-500">助記詞</div> <div class="font-bold text-gray-900 col-span-2 tracking-widest">*****</div>
+    <!-- ========================================== -->
+    <!-- 3. User View (用戶端 - 含底部導覽列)        -->
+    <!-- ========================================== -->
+    <div id="user-view" class="hidden h-full flex flex-col relative bg-gray-50">
+        
+        <!-- Tab 1: 優惠 (左) -->
+        <div id="tab-shop" class="flex-1 overflow-y-auto user-content-area hidden">
+            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-gray-800">最新優惠</h2>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- 模擬貼文 -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="h-48 bg-gray-300 flex items-center justify-center text-gray-500">
+                        <i class="ph ph-image text-4xl"></i>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-1">限時折扣：全館 85 折</h3>
+                        <p class="text-sm text-gray-600">本週末憑會員點數兌換優惠券，即可享全館折扣！</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="h-48 bg-gray-300 flex items-center justify-center text-gray-500">
+                        <i class="ph ph-image text-4xl"></i>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-1">新品上市：春季特調</h3>
+                        <p class="text-sm text-gray-600">使用點數免費升級大杯，快來嘗試新口味。</p>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Tab 2: 會員中心 (中 - 原先介面) -->
+        <div id="tab-profile" class="flex-1 overflow-y-auto user-content-area">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white relative rounded-b-[2rem] shadow-lg pb-8 pt-4 px-6 mb-4">
+                <button onclick="handleLogout()" class="absolute top-4 right-4 text-xs bg-black bg-opacity-20 px-3 py-1 rounded-full hover:bg-opacity-40 backdrop-blur-sm">登出</button>
+                <div class="flex flex-col items-center mt-4">
+                    <div class="text-xs uppercase tracking-widest opacity-80 mb-1">Current Points</div>
+                    <div class="text-6xl font-bold font-mono tracking-tighter drop-shadow-md" id="user-points-display">0</div>
+                    <!-- 匯率顯示 -->
+                    <div class="mt-2 bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm border border-white border-opacity-30">
+                        ≈ NT$ <span id="user-points-twd">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 space-y-6">
+                <!-- User Info -->
+                <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">基本資料</h3>
+                    <div class="grid grid-cols-3 gap-y-3 text-sm">
+                        <div class="text-gray-500">會員編號</div> <div id="user-id-display" class="font-bold text-gray-800 col-span-2 font-mono">...</div>
+                        <div class="text-gray-500">姓名</div> <div id="user-name-display" class="font-bold text-gray-800 col-span-2">...</div>
+                        <div class="text-gray-500">電話</div> <div id="user-phone-display" class="font-bold text-gray-800 col-span-2">...</div>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider px-5 py-3 bg-gray-50 border-b">交易紀錄</h3>
+                    <div id="user-logs-container" class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                        <div class="p-4 text-center text-gray-400 text-sm">載入中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: 權益說明 (右) -->
+        <div id="tab-info" class="flex-1 overflow-y-auto user-content-area hidden bg-white">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-indigo-900 mb-6">會員權益說明</h2>
+                
+                <div class="prose prose-sm text-gray-600 space-y-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-lg">1. 點數回饋機制</h3>
+                        <p>我們根據不同的消費類別提供不同的回饋比例：</p>
+                        <ul class="list-disc pl-5 mt-2 space-y-1">
+                            <li><span class="font-bold text-indigo-600">類別 A</span>：回饋消費金額的 10%</li>
+                            <li><span class="font-bold text-indigo-600">類別 B</span>：回饋消費金額的 5%</li>
+                            <li><span class="font-bold text-indigo-600">類別 C</span>：回饋消費金額的 3%</li>
+                            <li><span class="font-bold text-indigo-600">類別 D</span>：回饋消費金額的 1%</li>
+                        </ul>
+                    </div>
+
+                    <hr class="border-gray-200">
+
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-lg">2. 點數折抵</h3>
+                        <p>累積的點數可以折抵現金，目前的折抵匯率為：</p>
+                        <div class="bg-indigo-50 p-3 rounded mt-2 text-center font-bold text-indigo-800">
+                            1 點 = 0.5 元新台幣
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200">
+
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-lg">3. 注意事項</h3>
+                        <p>點數有效期為一年。系統保留隨時修改權益的權利。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="fixed bottom-0 w-full bg-white border-t border-gray-200 h-[70px] flex justify-around items-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
+            <button onclick="switchUserTab('shop')" class="nav-item flex flex-col items-center gap-1 text-gray-400 w-full h-full justify-center hover:bg-gray-50" data-target="shop">
+                <i class="ph ph-shopping-cart text-2xl"></i>
+                <span class="text-[10px] font-medium">優惠</span>
+            </button>
+            <button onclick="switchUserTab('profile')" class="nav-item flex flex-col items-center gap-1 text-indigo-600 w-full h-full justify-center hover:bg-gray-50 active" data-target="profile">
+                <i class="ph ph-user text-2xl"></i>
+                <span class="text-[10px] font-medium">我的</span>
+            </button>
+            <button onclick="switchUserTab('info')" class="nav-item flex flex-col items-center gap-1 text-gray-400 w-full h-full justify-center hover:bg-gray-50" data-target="info">
+                <i class="ph ph-question text-2xl"></i>
+                <span class="text-[10px] font-medium">權益</span>
+            </button>
+        </div>
     </div>
 
-    <!-- 4. Admin View -->
+    <!-- ========================================== -->
+    <!-- 4. Admin View (店家端)                     -->
+    <!-- ========================================== -->
     <div id="admin-view" class="h-full flex flex-col hidden bg-gray-100">
         <div class="bg-white shadow px-6 py-4 flex justify-between items-center z-10">
-            <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-storefront text-indigo-600"></i> 店家管理系統</h1>
-            <button onclick="handleLogout()" class="text-sm text-gray-500 hover:text-red-600 font-medium">登出</button>
+            <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center text-indigo-600"><i class="ph ph-storefront"></i></div>
+                店家管理系統
+            </h1>
+            <button onclick="handleLogout()" class="text-sm text-gray-500 hover:text-red-600 font-medium px-3 py-1 border rounded hover:bg-gray-50">登出</button>
         </div>
-        <div class="p-4 bg-gray-50 border-b flex gap-2">
-            <input type="text" id="admin-search" placeholder="搜尋姓名或電話..." class="flex-1 rounded border border-gray-300 px-4 py-2 text-sm outline-none">
-            <button onclick="fetchUsers()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"><i class="ph ph-arrows-clockwise"></i></button>
+        
+        <!-- Search Bar Optimization -->
+        <div class="p-4 bg-white border-b flex gap-2 shadow-sm">
+            <div class="relative flex-1">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="admin-search" placeholder="搜尋姓名、電話..." class="w-full rounded bg-gray-100 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 pl-10 pr-8 py-2 text-sm transition">
+                <button id="clear-search" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                    <i class="ph ph-x-circle-fill"></i>
+                </button>
+            </div>
+            <button onclick="fetchUsers()" class="bg-indigo-600 text-white px-4 py-2 rounded shadow-sm hover:bg-indigo-700 active:scale-95 transition">
+                <i class="ph ph-arrows-clockwise text-lg"></i>
+            </button>
         </div>
+
         <div class="flex-1 overflow-auto p-4">
-            <div class="bg-white rounded shadow overflow-hidden">
+            <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">用戶</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">點數</th><th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th></tr></thead>
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">用戶資料</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">目前點數</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
                     <tbody id="user-table-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
                 </table>
+                <div id="no-results" class="hidden p-8 text-center text-gray-500">
+                    查無資料
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 5. Admin Modal -->
-    <div id="admin-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-75 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden mx-4">
+    <!-- ========================================== -->
+    <!-- 5. Admin Modal (店家操作彈窗 - 優化版)       -->
+    <!-- ========================================== -->
+    <div id="admin-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 transform transition-all scale-100">
+            <!-- Modal Header -->
             <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
-                <h3 class="text-lg font-bold text-gray-800">會員管理</h3>
-                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">會員管理</h3>
+                    <span id="modal-user-subtitle" class="text-xs text-gray-500 font-mono"></span>
+                </div>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200"><i class="ph ph-x text-xl"></i></button>
             </div>
-            <div class="p-6 space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-gray-500">編號</label><input id="edit-display-id" disabled class="w-full bg-gray-100 border-b border-transparent text-sm py-1 font-mono"></div>
-                    <div><label class="block text-xs font-bold text-gray-500">目前點數</label><div id="edit-current-points" class="text-2xl font-bold text-indigo-600">0</div></div>
-                    <div class="col-span-2"><label class="block text-xs font-bold text-gray-500">姓名</label><input id="edit-name" class="w-full border-b border-gray-300 py-1 outline-none"></div>
-                    <div class="col-span-2"><label class="block text-xs font-bold text-gray-500">電話</label><input id="edit-phone" class="w-full border-b border-gray-300 py-1 outline-none"></div>
+
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <!-- User Basic Edit -->
+                <div class="grid grid-cols-2 gap-x-4 gap-y-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">姓名</label>
+                        <input id="edit-name" class="w-full border-b border-gray-300 py-1 outline-none focus:border-indigo-600 transition bg-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">電話</label>
+                        <input id="edit-phone" class="w-full border-b border-gray-300 py-1 outline-none focus:border-indigo-600 transition bg-transparent">
+                    </div>
+                    <div class="col-span-2 flex items-center justify-between bg-indigo-50 px-4 py-3 rounded-lg mt-2">
+                        <span class="text-xs font-bold text-indigo-800 uppercase">目前持有點數</span>
+                        <span id="edit-current-points" class="text-2xl font-bold text-indigo-600">0</span>
+                    </div>
                 </div>
 
-                <!-- Transaction Area -->
-                <div class="bg-indigo-50 p-4 rounded border border-indigo-100">
-                    <h4 class="text-sm font-bold text-indigo-800 mb-3 flex items-center gap-2"><i class="ph ph-coins"></i> 新增交易</h4>
-                    <div class="flex gap-2 mb-2">
-                        <select id="trans-type" class="text-sm border border-gray-300 rounded px-2 py-1 outline-none bg-white">
-                            <option value="add">增加 (+)</option>
-                            <option value="deduct">扣除 (-)</option>
-                        </select>
-                        <input type="number" id="trans-amount" placeholder="數量" class="flex-1 text-sm border border-gray-300 rounded px-2 py-1 outline-none" min="1">
+                <!-- Transaction Area (New Logic) -->
+                <div class="border-t pt-4">
+                    <h4 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="ph ph-cash-register text-indigo-600"></i> 新增消費紀錄
+                    </h4>
+                    
+                    <div class="space-y-3">
+                        <!-- 1. 產品名稱 -->
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">產品名稱</label>
+                            <input type="text" id="trans-product" placeholder="例如：拿鐵咖啡" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+
+                        <div class="flex gap-3">
+                            <!-- 2. 類別代號 -->
+                            <div class="w-1/3">
+                                <label class="block text-xs text-gray-500 mb-1">類別</label>
+                                <select id="trans-category" class="w-full border border-gray-300 rounded px-2 py-2 text-sm outline-none bg-white focus:ring-1 focus:ring-indigo-500" onchange="calculatePoints()">
+                                    <option value="A">A (10%)</option>
+                                    <option value="B">B (5%)</option>
+                                    <option value="C">C (3%)</option>
+                                    <option value="D">D (1%)</option>
+                                </select>
+                            </div>
+                            <!-- 3. 總金額 -->
+                            <div class="w-2/3">
+                                <label class="block text-xs text-gray-500 mb-1">消費總金額 (NT$)</label>
+                                <input type="number" id="trans-total" placeholder="0" min="0" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500" oninput="calculatePoints()">
+                            </div>
+                        </div>
+
+                        <!-- 4. 自動計算點數 -->
+                        <div class="bg-green-50 border border-green-200 rounded p-3 flex justify-between items-center">
+                            <span class="text-xs text-green-800 font-bold">預計獲得點數</span>
+                            <span id="trans-calc-points" class="text-xl font-bold text-green-700">0</span>
+                        </div>
                     </div>
-                    <input type="text" id="trans-reason" placeholder="交易備註" class="w-full text-sm border border-gray-300 rounded px-2 py-1 mb-3 outline-none">
-                    <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700 font-bold shadow-sm">確認交易</button>
+
+                    <button onclick="confirmTransaction()" id="btn-trans" class="w-full mt-4 bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md active:scale-[0.98] transition">確認交易並發送點數</button>
                 </div>
             </div>
-            <div class="px-6 py-3 bg-gray-50 flex justify-end gap-3">
+
+            <!-- Footer Actions -->
+            <div class="px-6 py-3 bg-gray-50 border-t flex justify-between items-center">
+                <button onclick="saveProfileChanges()" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold hover:underline">僅儲存資料修改</button>
                 <button onclick="closeAdminModal()" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100 text-sm">關閉</button>
-                <button onclick="saveProfileChanges()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-bold">儲存資料修改</button>
             </div>
         </div>
     </div>
 
     <input type="hidden" id="hidden-uid">
+    <input type="hidden" id="hidden-display-id">
 
     <script>
         // ==========================================
@@ -181,25 +365,27 @@
         // ==========================================
         const SUPABASE_URL = 'https://xnubbczorjzwlpbkjrfo.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudWJiY3pvcmp6d2xwYmtqcmZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5Mjg3MDEsImV4cCI6MjA4MDUwNDcwMX0.pqkraWF9WWHrKxInUHa3CaUWNt1twMZXkFyvxPIyVvs';
+        // BIP-39 Wordlist URL (使用 GitHub Raw)
+        const BIP39_URL = 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt';
         // ==========================================
 
-        let sbClient; // [修正] 重新命名變數，避免與 window.supabase 衝突
+        let sbClient; 
         let currentUser = null;
         let adminUsersCache = [];
         let authMode = 'login';
+        
+        // 類別回饋設定
+        const CAT_RATES = { 'A': 0.10, 'B': 0.05, 'C': 0.03, 'D': 0.01 };
 
-        // 初始化檢查
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
             document.getElementById('config-overlay').classList.remove('hidden');
         } else {
             document.getElementById('config-overlay').classList.add('hidden');
-            // [修正] 使用 window.supabase 確保取得正確的函式庫物件
             sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             initApp();
         }
 
         function initApp() {
-            // [修正] 使用 sbClient 而非 supabase
             sbClient.auth.onAuthStateChange((event, session) => {
                 if (session) {
                     currentUser = session.user;
@@ -213,10 +399,18 @@
         }
 
         function switchView(name) {
-            document.querySelectorAll('body > div[id$="-view"]').forEach(el => el.classList.add('hidden'));
+            // 隱藏所有主視圖
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('user-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            
+            // 顯示目標視圖
             document.getElementById(name + '-view').classList.remove('hidden');
         }
 
+        // ==========================================
+        // Auth Logic
+        // ==========================================
         function setAuthMode(mode) {
             authMode = mode;
             document.getElementById('auth-message').classList.add('hidden');
@@ -253,7 +447,6 @@
 
                 try {
                     if (authMode === 'login') {
-                        // [修正] 使用 sbClient
                         const { error } = await sbClient.auth.signInWithPassword({ email, password: pwd });
                         if(error) throw error;
                     } else if (authMode === 'register') {
@@ -267,6 +460,33 @@
                     btn.disabled = false; btn.innerText = authMode === 'login' ? '登入' : '送出';
                 }
             };
+
+            // Admin Search Clear Button
+            const searchInput = document.getElementById('admin-search');
+            const clearBtn = document.getElementById('clear-search');
+            searchInput.addEventListener('input', (e) => {
+                clearBtn.classList.toggle('hidden', !e.target.value);
+                filterUsers(e.target.value);
+            });
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                clearBtn.classList.add('hidden');
+                filterUsers('');
+            });
+        }
+
+        // Fetch BIP39 words from GitHub
+        async function fetchBip39Words() {
+            try {
+                const response = await fetch(BIP39_URL);
+                if (!response.ok) throw new Error('Fetch failed');
+                const text = await response.text();
+                return text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+            } catch (e) {
+                console.warn("GitHub fetch failed, using fallback list.");
+                // 極簡的 Fallback，防止完全無法運作 (實際專案應有更完善的錯誤處理)
+                return ['alpha','bravo','charlie','delta','echo','foxtrot','golf','hotel','india','juliet','kilo','lima','mike','november','oscar','papa','quebec','romeo','sierra','tango','uniform','victor','whiskey','xray','yankee','zulu'];
+            }
         }
 
         async function handleRegister(email, password) {
@@ -274,146 +494,283 @@
             const phone = document.getElementById('phone').value;
             if(!name || !phone) throw new Error('請填寫完整資料');
 
-            const mnemonic = Array(4).fill().map(() => ['apple','sky','blue','star','gold'][Math.floor(Math.random()*5)]).join('-') + '-' + Math.floor(1000+Math.random()*9000);
+            document.getElementById('mnemonic-loading').classList.remove('hidden');
+            document.getElementById('generated-mnemonic').classList.add('hidden');
+            document.getElementById('mnemonic-modal').classList.remove('hidden');
+
+            // 1. 生成助記詞 (從網路抓取)
+            const wordList = await fetchBip39Words();
+            const selectedWords = [];
+            for(let i=0; i<12; i++) {
+                selectedWords.push(wordList[Math.floor(Math.random() * wordList.length)]);
+            }
+            const mnemonic = selectedWords.join(' '); // BIP-39 標準是用空格分隔
+
+            document.getElementById('mnemonic-loading').classList.add('hidden');
+            document.getElementById('generated-mnemonic').innerText = mnemonic;
+            document.getElementById('generated-mnemonic').classList.remove('hidden');
             
-            // [修正] 使用 sbClient
+            // 2. 註冊 Supabase
             const { data, error } = await sbClient.auth.signUp({ email, password });
             if(error) throw error;
 
+            // 3. 寫入 Profiles
             const { error: pErr } = await sbClient.from('profiles').insert([{
-                id: data.user.id, full_name: name, phone: phone, 
+                id: data.user.id, 
+                full_name: name, 
+                phone: phone, 
                 user_id_display: 'M' + Math.floor(100000 + Math.random() * 900000),
-                mnemonic: mnemonic, email: email
+                mnemonic: mnemonic, 
+                email: email
             }]);
             if(pErr) throw pErr;
-
-            document.getElementById('generated-mnemonic').innerText = mnemonic;
-            document.getElementById('mnemonic-modal').classList.remove('hidden');
         }
 
         function closeMnemonicModal() {
             document.getElementById('mnemonic-modal').classList.add('hidden');
         }
 
-    async function handleResetPassword(email) {
-                // 1. 強制去除前後空白
-                const safeEmail = email.trim(); 
-                const mnemonic = document.getElementById('recovery-mnemonic').value.trim();
-                const newPwd = document.getElementById('new-password').value;
-                
-                if(!mnemonic || !newPwd) throw new Error('請填寫助記詞與新密碼');
+        async function handleResetPassword(email) {
+            const safeEmail = email.trim(); 
+            const mnemonic = document.getElementById('recovery-mnemonic').value.trim();
+            const newPwd = document.getElementById('new-password').value;
+            
+            if(!mnemonic || !newPwd) throw new Error('請填寫助記詞與新密碼');
 
-                console.log("正在嘗試重設...");
-                console.log("Email:", safeEmail);
-                console.log("Mnemonic:", mnemonic);
+            const { data, error } = await sbClient.rpc('reset_password_via_mnemonic', {
+                target_email: safeEmail, 
+                mnemonic_check: mnemonic, 
+                new_password: newPwd
+            });
 
-                // 呼叫 RPC
-                const { data, error } = await sbClient.rpc('reset_password_via_mnemonic', {
-                    target_email: safeEmail, 
-                    mnemonic_check: mnemonic, 
-                    new_password: newPwd
-                });
+            if (error) throw new Error('系統錯誤: ' + error.message);
+            if (data === false) throw new Error('重設失敗：助記詞錯誤或帳號不存在');
+            
+            showMsg('密碼已重設，請登入', false);
+            setTimeout(() => setAuthMode('login'), 1500);
+        }
 
-                // 詳細錯誤處理
-                if (error) {
-                    console.error("RPC Error:", error);
-                    throw new Error('系統錯誤: ' + error.message);
-                }
-                
-                // data 為 false 代表 SQL 內的 if 判斷沒過
-                if (data === false) {
-                    console.error("RPC 回傳 False。原因可能是：Email 沒對上，或是助記詞沒對上。");
-                    throw new Error('重設失敗：助記詞錯誤或帳號不存在 (請檢查資料庫 profiles 表格是否有值)');
-                }
-                
-                showMsg('密碼已重設，請登入', false);
-                setTimeout(() => setAuthMode('login'), 1500);
-            }
         async function loadProfile(uid) {
             const { data, error } = await sbClient.from('profiles').select('*').eq('id', uid).single();
             if(error) { sbClient.auth.signOut(); return; }
-            if(data.role === 'admin') { switchView('admin'); fetchUsers(); }
-            else { renderUserView(data); switchView('user'); }
+            if(data.role === 'admin') { 
+                switchView('admin'); 
+                fetchUsers(); 
+            } else { 
+                renderUserView(data); 
+                fetchUserLogs(uid); // 載入交易紀錄
+                switchUserTab('profile'); // 預設顯示個人頁面
+                switchView('user'); 
+            }
         }
 
+        // ==========================================
+        // User View Logic (Client)
+        // ==========================================
         function renderUserView(p) {
-            document.getElementById('user-points-display').innerText = p.points;
+            // 1. 點數與台幣換算 (1點 = 0.5 NTD)
+            const points = p.points || 0;
+            const twd = Math.floor(points * 0.5);
+            
+            document.getElementById('user-points-display').innerText = points;
+            document.getElementById('user-points-twd').innerText = twd;
+
+            // 2. 基本資料
             document.getElementById('user-id-display').innerText = p.user_id_display;
             document.getElementById('user-name-display').innerText = p.full_name;
             document.getElementById('user-email-display').innerText = currentUser.email;
             document.getElementById('user-phone-display').innerText = p.phone;
         }
 
-        async function handleLogout() { await sbClient.auth.signOut(); }
+        async function fetchUserLogs(uid) {
+            const container = document.getElementById('user-logs-container');
+            container.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">載入中...</div>';
 
-        // --- 店家功能 ---
-        async function fetchUsers() {
-            const { data } = await sbClient.from('profiles').select('*').order('created_at', {ascending: false});
-            adminUsersCache = data || [];
-            const tbody = document.getElementById('user-table-body');
-            tbody.innerHTML = '';
-            adminUsersCache.forEach(u => {
-                if(u.role === 'admin') return;
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50 border-b';
-                tr.innerHTML = `<td class="px-4 py-3"><div>${u.full_name}</div><div class="text-xs text-gray-500">${u.phone}</div></td><td class="px-4 py-3 font-bold text-indigo-600">${u.points}</td><td class="px-4 py-3 text-right"><button onclick="openAdminModal('${u.id}')" class="text-indigo-600 border border-indigo-600 px-3 py-1 rounded text-xs hover:bg-indigo-50">管理</button></td>`;
-                tbody.appendChild(tr);
+            const { data, error } = await sbClient
+                .from('point_logs')
+                .select('*')
+                .eq('user_id', uid)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if(error || !data || data.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">尚無交易紀錄</div>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(log => {
+                const isAdd = log.change_amount > 0;
+                const colorClass = isAdd ? 'text-green-600' : 'text-red-600';
+                const sign = isAdd ? '+' : '';
+                const date = new Date(log.created_at).toLocaleDateString();
+                
+                html += `
+                <div class="px-5 py-3 flex justify-between items-center hover:bg-gray-50 transition">
+                    <div>
+                        <div class="text-sm font-bold text-gray-800">${log.reason || '系統調整'}</div>
+                        <div class="text-xs text-gray-400">${date}</div>
+                    </div>
+                    <div class="font-mono font-bold ${colorClass}">
+                        ${sign}${log.change_amount}
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // 底部導覽列切換
+        window.switchUserTab = function(target) {
+            // Update buttons
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                const isActive = btn.dataset.target === target;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('text-indigo-600', isActive);
+                btn.classList.toggle('text-gray-400', !isActive);
+            });
+
+            // Update content
+            ['shop', 'profile', 'info'].forEach(tab => {
+                const el = document.getElementById('tab-' + tab);
+                if(tab === target) el.classList.remove('hidden');
+                else el.classList.add('hidden');
             });
         }
 
-        document.getElementById('admin-search').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            document.querySelectorAll('#user-table-body tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(val) ? '' : 'none');
-        });
+        async function handleLogout() { await sbClient.auth.signOut(); }
 
+        // ==========================================
+        // Admin Logic
+        // ==========================================
+        async function fetchUsers() {
+            const btn = document.querySelector('#admin-view button i.ph-arrows-clockwise').parentElement;
+            btn.classList.add('animate-spin');
+            
+            const { data } = await sbClient.from('profiles').select('*').order('created_at', {ascending: false});
+            adminUsersCache = data || [];
+            
+            filterUsers(document.getElementById('admin-search').value);
+            
+            setTimeout(() => btn.classList.remove('animate-spin'), 500);
+        }
+
+        function filterUsers(keyword) {
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '';
+            const val = keyword.toLowerCase();
+            let count = 0;
+
+            adminUsersCache.forEach(u => {
+                if(u.role === 'admin') return;
+                
+                // Search Logic: Name OR Phone
+                const matchName = (u.full_name || '').toLowerCase().includes(val);
+                const matchPhone = (u.phone || '').includes(val);
+                
+                if (val === '' || matchName || matchPhone) {
+                    count++;
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 border-b transition';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-gray-800">${u.full_name}</div>
+                            <div class="text-xs text-gray-500 font-mono">${u.phone}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-block px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold font-mono">
+                                ${u.points} P
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="openAdminModal('${u.id}')" class="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded text-xs shadow-sm transition">
+                                管理
+                            </button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('no-results').classList.toggle('hidden', count > 0);
+        }
+
+        // Modal Logic
         function openAdminModal(uid) {
             const user = adminUsersCache.find(u => u.id === uid);
             document.getElementById('hidden-uid').value = uid;
-            document.getElementById('edit-display-id').value = user.user_id_display;
+            document.getElementById('hidden-display-id').value = user.user_id_display; // 保留 ID 供備註使用
+            
+            document.getElementById('modal-user-subtitle').innerText = `#${user.user_id_display}`;
             document.getElementById('edit-current-points').innerText = user.points;
             document.getElementById('edit-name').value = user.full_name;
             document.getElementById('edit-phone').value = user.phone;
-            document.getElementById('trans-amount').value = '';
-            document.getElementById('trans-reason').value = '';
-            document.getElementById('admin-modal').classList.remove('hidden');
+            
+            // Reset Transaction Fields
+            document.getElementById('trans-product').value = '';
+            document.getElementById('trans-total').value = '';
+            document.getElementById('trans-category').value = 'A';
+            document.getElementById('trans-calc-points').innerText = '0';
+            
+            // Animation
+            const modal = document.getElementById('admin-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div').classList.remove('scale-95');
+            }, 10);
         }
-        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // 自動計算點數
+        window.calculatePoints = function() {
+            const amount = parseInt(document.getElementById('trans-total').value) || 0;
+            const category = document.getElementById('trans-category').value;
+            const rate = CAT_RATES[category] || 0;
+            const points = Math.floor(amount * rate);
+            document.getElementById('trans-calc-points').innerText = points;
+        }
 
         async function confirmTransaction() {
             const uid = document.getElementById('hidden-uid').value;
-            const type = document.getElementById('trans-type').value;
-            const amount = parseInt(document.getElementById('trans-amount').value);
-            const reason = document.getElementById('trans-reason').value;
+            const displayId = document.getElementById('hidden-display-id').value;
+            
+            const product = document.getElementById('trans-product').value;
+            const category = document.getElementById('trans-category').value;
+            const totalAmount = parseInt(document.getElementById('trans-total').value);
+            const pointsToAdd = parseInt(document.getElementById('trans-calc-points').innerText);
 
-            if(!amount || amount <= 0) return alert('請輸入有效數量');
-            if(!reason) return alert('請輸入交易備註');
+            if(!product) return alert('請輸入產品名稱');
+            if(!totalAmount || totalAmount <= 0) return alert('請輸入有效金額');
 
-            const changeAmount = type === 'add' ? amount : -amount;
+            // 組合備註字串：[A類] 拿鐵咖啡 $100
+            const reason = `[${category}類] ${product} $${totalAmount}`;
+
             const btn = document.getElementById('btn-trans');
             btn.disabled = true; btn.innerText = '處理中...';
 
             try {
-                // [修正] 使用 sbClient
+                // 寫入 Log
                 const { error } = await sbClient.from('point_logs').insert([{
                     user_id: uid,
                     admin_id: currentUser.id,
-                    change_amount: changeAmount,
+                    change_amount: pointsToAdd,
                     reason: reason
                 }]);
 
                 if(error) throw error;
 
-                alert('交易成功');
+                alert('交易成功！已發送 ' + pointsToAdd + ' 點');
                 closeAdminModal();
-                fetchUsers(); 
+                fetchUsers(); // Refresh list
             } catch(err) {
-                if (err.message && err.message.includes('profiles_points_check')) {
-                    alert('交易失敗：用戶點數餘額不足，無法扣除。');
-                } else {
-                    alert('交易失敗：' + err.message);
-                }
+                alert('交易失敗：' + err.message);
             } finally {
-                btn.disabled = false; btn.innerText = '確認交易';
+                btn.disabled = false; btn.innerText = '確認交易並發送點數';
             }
         }
 
@@ -423,7 +780,7 @@
                 full_name: document.getElementById('edit-name').value,
                 phone: document.getElementById('edit-phone').value
             }).eq('id', uid);
-            if(error) alert('失敗'); else { alert('已儲存'); closeAdminModal(); fetchUsers(); }
+            if(error) alert('失敗'); else { alert('資料已更新'); closeAdminModal(); fetchUsers(); }
         }
 
         function showMsg(text, isError) {
