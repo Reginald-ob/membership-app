@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>冠軍永安羽球館|會員專區 Pro</title>
+    <title>會員積分管理系統 Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
@@ -24,6 +24,155 @@
         
         /* 用戶頁面佈局調整 */
         .user-content-area { padding-bottom: 80px; /* 避開底部導覽列 */ }
+        
+        /* Admin Grid Button Styles */
+        .admin-grid-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1rem; border-radius: 0.5rem; border: 1px solid #e5e7eb;
+            background-color: white; transition: all 0.2s;
+            height: 100px;
+        }
+        .admin-grid-btn:hover:not(:disabled) { background-color: #eff6ff; border-color: #6366f1; color: #4338ca; }
+        .admin-grid-btn:disabled { background-color: #f9fafb; color: #9ca3af; cursor: not-allowed; border-style: dashed; }
+        .admin-grid-btn i { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .admin-grid-btn span { font-size: 0.75rem; font-weight: bold; }
+
+        /* --- 側邊欄 Hover 底線特效 --- */
+        .hover-underline-grow {
+            position: relative;
+            text-decoration: none;
+            display: inline-block;
+            padding-bottom: 2px;
+        }
+        .hover-underline-grow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: currentColor; /* 跟隨文字顏色 */
+            transition: width 0.3s ease-in-out;
+        }
+        .hover-underline-grow:hover::after {
+            width: 100%;
+        }
+
+        /* Sidebar Transition */
+        .sidebar-panel {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* --- NEW: Purple Logout Button Style (Sidebar Bottom) --- */
+        .user-profile {
+            width: 131px;
+            height: 51px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s ease;
+            /* Modified to Purple Gradient */
+            background: linear-gradient(
+                to bottom right,
+                #8B5CF6 0%,
+                rgba(139, 92, 246, 0) 30%
+            );
+            background-color: rgba(139, 92, 246, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .user-profile:hover,
+        .user-profile:focus {
+            background-color: rgba(139, 92, 246, 0.7);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+            outline: none;
+        }
+
+        .user-profile-inner {
+            width: 127px;
+            height: 47px;
+            border-radius: 13px;
+            background-color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .user-profile-inner svg {
+            width: 27px;
+            height: 27px;
+            fill: #fff;
+        }
+
+        /* --- NEW: Purple Reward/Menu Button Style (Top Left Toggle) --- */
+        .reward-btn {
+            width: 120px;
+            height: 40px;
+            background-color: #101218;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            /* Ensure it doesn't shrink in flex containers */
+            flex-shrink: 0; 
+        }
+        .IconContainer {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .IconContainer svg {
+            width: 40%;
+            z-index: 3;
+        }
+        .box-top {
+            transition: all 0.3s;
+        }
+        .text {
+            width: 70px;
+            height: 100%;
+            font-size: 13px;
+            /* Changed to Purple */
+            color: #8B5CF6; 
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-weight: 600;
+            padding-left: 8px;
+        }
+        .reward-btn:hover .IconContainer .box-top {
+            transform: translateY(-5px);
+        }
+        .reward-btn:hover {
+            background-color: #202531;
+        }
+        .reward-btn:hover .coin {
+            transform: translateY(-5px);
+            transition-delay: 0.2s;
+        }
+        .coin {
+            width: 25%;
+            height: 25%;
+            background-color: #e4d61a;
+            position: absolute;
+            border-radius: 50%;
+            transition: all 0.3s;
+            z-index: 1;
+            border: 2px solid #ffe956;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
@@ -112,9 +261,81 @@
     <!-- ========================================== -->
     <div id="user-view" class="hidden h-full flex flex-col relative bg-gray-50">
         
+        <!-- SIDEBAR: User (Off-canvas) -->
+        <div id="user-sidebar-container" class="fixed inset-0 z-[60] hidden">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black bg-opacity-50 transition-opacity" onclick="toggleSidebar('user')"></div>
+            <!-- Sidebar Content -->
+            <div id="user-sidebar-panel" class="absolute top-0 bottom-0 left-0 w-64 bg-gray-900 text-white shadow-xl transform -translate-x-full sidebar-panel flex flex-col">
+                <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                    <span class="text-lg font-bold tracking-wider">MENU</span>
+                    <button onclick="toggleSidebar('user')" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <div class="flex-1 p-6 space-y-6">
+                    <!-- Menu Item 1 -->
+                    <div>
+                        <a href="#" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
+                            選單項目一
+                        </a>
+                    </div>
+                    <!-- Menu Item 2 -->
+                    <div>
+                        <a href="#" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
+                            選單項目二
+                        </a>
+                    </div>
+                    <!-- Menu Item 3 -->
+                    <div>
+                        <a href="#" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
+                            選單項目三
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Sidebar Footer with Logout Button -->
+                <div class="p-6 border-t border-gray-700 flex flex-col gap-4">
+                    <!-- Custom Logout Button (Purple) -->
+                    <div aria-label="User Logout Button" tabindex="0" role="button" class="user-profile" onclick="handleLogout()">
+                        <div class="user-profile-inner">
+                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <g data-name="Layer 2" id="Layer_2">
+                                    <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
+                                </g>
+                            </svg>
+                            <p>Log Out</p>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 text-center">
+                        &copy; 2025 Membership App
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tab 1: 優惠 (左) -->
         <div id="tab-shop" class="flex-1 overflow-y-auto user-content-area hidden">
-            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10">
+            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3">
+                <!-- NEW: 3D Box Toggle Button (Purple) -->
+                <button class="reward-btn" onclick="toggleSidebar('user')">
+                    <span class="IconContainer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box">
+                            <path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path>
+                            <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle>
+                            <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 58 44" class="box-body box">
+                            <mask fill="white" id="path-1-inside-1_81_19_shop">
+                                <rect rx="3" height="44" width="58"></rect>
+                            </mask>
+                            <rect mask="url(#path-1-inside-1_81_19_shop)" stroke-width="8" stroke="#8B5CF6" fill="#101218" rx="3" height="44" width="58"></rect>
+                            <line stroke-width="6" stroke="#8B5CF6" y2="29" x2="58" y1="29" x1="-3.61529e-09"></line>
+                            <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M45.0005 20L36 3"></path>
+                            <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M21 3L13.0002 19.9992"></path>
+                        </svg>
+                        <span class="coin"></span>
+                    </span>
+                    <span class="text">MENU</span>
+                </button>
                 <h2 class="text-xl font-bold text-gray-800">最新優惠</h2>
             </div>
             <div class="p-4 space-y-4">
@@ -144,6 +365,31 @@
         <div id="tab-profile" class="flex-1 overflow-y-auto user-content-area">
             <!-- Header Card -->
             <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white relative rounded-b-[2rem] shadow-lg pb-8 pt-4 px-6 mb-4">
+                
+                <!-- NEW: 3D Box Toggle Button (Purple) - Absolute -->
+                <div class="absolute top-4 left-4">
+                    <button class="reward-btn scale-75 origin-top-left" onclick="toggleSidebar('user')">
+                        <span class="IconContainer">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box">
+                                <path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path>
+                                <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle>
+                                <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle>
+                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 58 44" class="box-body box">
+                                <mask fill="white" id="path-1-inside-1_81_19_prof">
+                                    <rect rx="3" height="44" width="58"></rect>
+                                </mask>
+                                <rect mask="url(#path-1-inside-1_81_19_prof)" stroke-width="8" stroke="#8B5CF6" fill="#101218" rx="3" height="44" width="58"></rect>
+                                <line stroke-width="6" stroke="#8B5CF6" y2="29" x2="58" y1="29" x1="-3.61529e-09"></line>
+                                <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M45.0005 20L36 3"></path>
+                                <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M21 3L13.0002 19.9992"></path>
+                            </svg>
+                            <span class="coin"></span>
+                        </span>
+                        <span class="text">MENU</span>
+                    </button>
+                </div>
+
                 <button onclick="handleLogout()" class="absolute top-4 right-4 text-xs bg-black bg-opacity-20 px-3 py-1 rounded-full hover:bg-opacity-40 backdrop-blur-sm">登出</button>
                 <div class="flex flex-col items-center mt-4">
                     <div class="text-xs uppercase tracking-widest opacity-80 mb-1">Current Points</div>
@@ -178,18 +424,42 @@
 
         <!-- Tab 3: 權益說明 (右) -->
         <div id="tab-info" class="flex-1 overflow-y-auto user-content-area hidden bg-white">
+            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3 border-b">
+                <!-- NEW: 3D Box Toggle Button (Purple) -->
+                <button class="reward-btn" onclick="toggleSidebar('user')">
+                    <span class="IconContainer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box">
+                            <path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path>
+                            <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle>
+                            <circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 58 44" class="box-body box">
+                            <mask fill="white" id="path-1-inside-1_81_19_info">
+                                <rect rx="3" height="44" width="58"></rect>
+                            </mask>
+                            <rect mask="url(#path-1-inside-1_81_19_info)" stroke-width="8" stroke="#8B5CF6" fill="#101218" rx="3" height="44" width="58"></rect>
+                            <line stroke-width="6" stroke="#8B5CF6" y2="29" x2="58" y1="29" x1="-3.61529e-09"></line>
+                            <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M45.0005 20L36 3"></path>
+                            <path stroke-linecap="round" stroke-width="5" stroke="#8B5CF6" d="M21 3L13.0002 19.9992"></path>
+                        </svg>
+                        <span class="coin"></span>
+                    </span>
+                    <span class="text">MENU</span>
+                </button>
+                <h2 class="text-xl font-bold text-indigo-900">權益說明</h2>
+            </div>
+            
             <div class="p-6">
-                <h2 class="text-2xl font-bold text-indigo-900 mb-6">會員權益說明</h2>
-                
                 <div class="prose prose-sm text-gray-600 space-y-4">
                     <div>
                         <h3 class="font-bold text-gray-900 text-lg">1. 點數回饋機制</h3>
                         <p>我們根據不同的消費類別提供不同的回饋比例：</p>
                         <ul class="list-disc pl-5 mt-2 space-y-1">
-                            <li><span class="font-bold text-indigo-600">類別 A</span>：回饋消費金額的 10%</li>
-                            <li><span class="font-bold text-indigo-600">類別 B</span>：回饋消費金額的 5%</li>
-                            <li><span class="font-bold text-indigo-600">類別 C</span>：回饋消費金額的 3%</li>
-                            <li><span class="font-bold text-indigo-600">類別 D</span>：回饋消費金額的 1%</li>
+                            <li><span class="font-bold text-indigo-600">類別 A - 臨租場地</span>：回饋消費金額的 4%</li>
+                            <li><span class="font-bold text-indigo-600">類別 B - 月季租場地</span>：回饋消費金額的 1%</li>
+                            <li><span class="font-bold text-indigo-600">類別 C - 專業裝備</span>：回饋消費金額的 3%</li>
+                            <li><span class="font-bold text-indigo-600">類別 D - 羽毛球/球拍穿線</span>：已按原價打折，回饋 0%</li>
+                            <li><span class="font-bold text-indigo-600">類別 E - 消耗品</span>：回饋消費金額的 5%</li>
                         </ul>
                     </div>
 
@@ -234,12 +504,60 @@
     <!-- 4. Admin View (店家端)                     -->
     <!-- ========================================== -->
     <div id="admin-view" class="h-full flex flex-col hidden bg-gray-100">
-        <div class="bg-white shadow px-6 py-4 flex justify-between items-center z-10">
-            <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center text-indigo-600"><i class="ph ph-storefront"></i></div>
-                店家管理系統
-            </h1>
-            <button onclick="handleLogout()" class="text-sm text-gray-500 hover:text-red-600 font-medium px-3 py-1 border rounded hover:bg-gray-50">登出</button>
+        
+        <!-- SIDEBAR: Admin (Off-canvas) -->
+        <div id="admin-sidebar-container" class="fixed inset-0 z-[60] hidden">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onclick="toggleSidebar('admin')"></div>
+            <!-- Sidebar Content -->
+            <div id="admin-sidebar-panel" class="absolute top-0 bottom-0 left-0 w-64 bg-white text-gray-800 shadow-xl transform -translate-x-full sidebar-panel flex flex-col">
+                <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                    <span class="text-lg font-bold text-indigo-600 flex items-center gap-2">
+                        <i class="ph ph-storefront"></i> 管理選單
+                    </span>
+                    <button onclick="toggleSidebar('admin')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <div class="flex-1 p-6 space-y-6">
+                     <!-- Menu Item 1 -->
+                     <div>
+                        <a href="#" class="text-lg font-medium text-gray-600 hover:text-indigo-600 hover-underline-grow">
+                            選單項目一
+                        </a>
+                    </div>
+                    <!-- Menu Item 2 -->
+                    <div>
+                        <a href="#" class="text-lg font-medium text-gray-600 hover:text-indigo-600 hover-underline-grow">
+                            選單項目二
+                        </a>
+                    </div>
+                    <!-- Menu Item 3 -->
+                    <div>
+                        <a href="#" class="text-lg font-medium text-gray-600 hover:text-indigo-600 hover-underline-grow">
+                            選單項目三
+                        </a>
+                    </div>
+                </div>
+                <div class="p-4 border-t text-center">
+                    <button onclick="handleLogout()" class="w-full py-2 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm font-bold">
+                        <i class="ph ph-sign-out"></i> 登出系統
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Header -->
+        <div class="bg-white shadow px-6 py-4 flex justify-between items-center z-10 sticky top-0">
+            <div class="flex items-center gap-3">
+                <!-- Hamburger Trigger (Admin) -->
+                <button onclick="toggleSidebar('admin')" class="text-gray-600 hover:text-indigo-600">
+                    <i class="ph ph-list text-2xl"></i>
+                </button>
+                <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center text-indigo-600"><i class="ph ph-storefront"></i></div>
+                    店家管理系統
+                </h1>
+            </div>
+            <button onclick="handleLogout()" class="text-sm text-gray-500 hover:text-red-600 font-medium px-3 py-1 border rounded hover:bg-gray-50 hidden md:block">登出</button>
         </div>
         
         <!-- Search Bar Optimization -->
@@ -279,9 +597,9 @@
     <!-- 5. Admin Modal (店家操作彈窗 - 優化版)       -->
     <!-- ========================================== -->
     <div id="admin-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 transform transition-all scale-100">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 transform transition-all scale-100 h-[85vh] flex flex-col">
             <!-- Modal Header -->
-            <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
+            <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center shrink-0">
                 <div>
                     <h3 class="text-lg font-bold text-gray-800">會員管理</h3>
                     <span id="modal-user-subtitle" class="text-xs text-gray-500 font-mono"></span>
@@ -289,7 +607,8 @@
                 <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200"><i class="ph ph-x text-xl"></i></button>
             </div>
 
-            <div class="p-6 overflow-y-auto max-h-[70vh]">
+            <!-- Scrollable Content -->
+            <div class="p-6 overflow-y-auto flex-1">
                 <!-- User Basic Edit -->
                 <div class="grid grid-cols-2 gap-x-4 gap-y-4 mb-6">
                     <div>
@@ -306,50 +625,123 @@
                     </div>
                 </div>
 
-                <!-- Transaction Area (New Logic) -->
                 <div class="border-t pt-4">
-                    <h4 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="ph ph-cash-register text-indigo-600"></i> 新增消費紀錄
-                    </h4>
-                    
-                    <div class="space-y-3">
-                        <!-- 1. 產品名稱 -->
+                    <!-- VIEW 1: 功能選單 Grid -->
+                    <div id="admin-action-menu" class="grid grid-cols-3 gap-3">
+                        <!-- 1. 新增消費 (正常) -->
+                        <button onclick="showTransForm()" class="admin-grid-btn border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700">
+                            <i class="ph ph-cash-register"></i>
+                            <span>新增消費</span>
+                        </button>
+                        <!-- 2. 歷史紀錄 (正常) -->
+                        <button onclick="fetchAndShowHistory()" class="admin-grid-btn text-gray-600 hover:text-indigo-600">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span>歷史紀錄</span>
+                        </button>
+                        <!-- 3. 功能預留 (Disabled) -->
+                        <button disabled class="admin-grid-btn">
+                            <i class="ph ph-plus"></i>
+                            <span>預留功能</span>
+                        </button>
+                        <!-- 4. 功能預留 (Disabled) -->
+                        <button disabled class="admin-grid-btn">
+                            <i class="ph ph-plus"></i>
+                            <span>預留功能</span>
+                        </button>
+                        <!-- 5. 功能預留 (Disabled) -->
+                        <button disabled class="admin-grid-btn">
+                            <i class="ph ph-plus"></i>
+                            <span>預留功能</span>
+                        </button>
+                         <!-- 6. 功能預留 (Disabled) -->
+                         <button disabled class="admin-grid-btn">
+                            <i class="ph ph-plus"></i>
+                            <span>預留功能</span>
+                        </button>
+                    </div>
+
+                    <!-- VIEW 2: 新增交易表單 (預設隱藏) -->
+                    <div id="admin-trans-form" class="hidden animate-fade-in space-y-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <i class="ph ph-cash-register text-indigo-600"></i> 填寫交易詳情
+                            </h4>
+                            <button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button>
+                        </div>
+                        
+                        <!-- Form Inputs -->
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">產品名稱</label>
                             <input type="text" id="trans-product" placeholder="例如：拿鐵咖啡" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
 
                         <div class="flex gap-3">
-                            <!-- 2. 類別代號 -->
                             <div class="w-1/3">
                                 <label class="block text-xs text-gray-500 mb-1">類別</label>
                                 <select id="trans-category" class="w-full border border-gray-300 rounded px-2 py-2 text-sm outline-none bg-white focus:ring-1 focus:ring-indigo-500" onchange="calculatePoints()">
-                                    <option value="A">A (10%)</option>
-                                    <option value="B">B (5%)</option>
-                                    <option value="C">C (3%)</option>
-                                    <option value="D">D (1%)</option>
+                                    <option value="A">A (臨租 - 4%)</option>
+                                    <option value="B">B (月租 - 1%)</option>
+                                    <option value="C">C (裝備 - 3%)</option>
+                                    <option value="D">D (穿線 - 0%)</option>
+                                    <option value="E">E (消耗 - 5%)</option>
                                 </select>
                             </div>
-                            <!-- 3. 總金額 -->
                             <div class="w-2/3">
                                 <label class="block text-xs text-gray-500 mb-1">消費總金額 (NT$)</label>
                                 <input type="number" id="trans-total" placeholder="0" min="0" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500" oninput="calculatePoints()">
                             </div>
                         </div>
 
-                        <!-- 4. 自動計算點數 -->
-                        <div class="bg-green-50 border border-green-200 rounded p-3 flex justify-between items-center">
-                            <span class="text-xs text-green-800 font-bold">預計獲得點數</span>
-                            <span id="trans-calc-points" class="text-xl font-bold text-green-700">0</span>
+                        <div class="bg-red-50 p-3 rounded border border-red-100 mt-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs text-red-700 font-bold"><i class="ph ph-ticket"></i> 本次折抵點數</label>
+                                <span class="text-[10px] text-red-500" id="deduct-warning"></span>
+                            </div>
+                            <input type="number" id="trans-deduct" placeholder="0" min="0" class="w-full border border-red-200 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-red-500 bg-white text-red-700 font-bold" oninput="calculatePoints()">
                         </div>
+
+                        <div class="bg-indigo-50 border border-indigo-200 rounded p-3 flex justify-between items-center">
+                            <span class="text-xs text-indigo-800 font-bold">點數變動</span>
+                            <span id="trans-final-change" class="text-xl font-bold text-indigo-700">0</span>
+                        </div>
+                        <input type="hidden" id="hidden-calc-earned" value="0">
+
+                        <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md mt-2">確認交易</button>
                     </div>
 
-                    <button onclick="confirmTransaction()" id="btn-trans" class="w-full mt-4 bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md active:scale-[0.98] transition">確認交易並發送點數</button>
+                    <!-- VIEW 3: 歷史紀錄清單 (預設隱藏) -->
+                    <div id="admin-history-view" class="hidden animate-fade-in h-full flex flex-col">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <i class="ph ph-clock-counter-clockwise text-indigo-600"></i> 歷史消費紀錄
+                            </h4>
+                            <button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button>
+                        </div>
+                        
+                        <div class="overflow-x-auto border rounded-lg border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-bold text-gray-500 whitespace-nowrap">日期</th>
+                                        <th class="px-3 py-2 text-left text-xs font-bold text-gray-500">項目</th>
+                                        <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">金額</th>
+                                        <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">折抵</th>
+                                        <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">變動</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-history-tbody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="admin-history-loading" class="text-center py-4 text-gray-400 text-xs hidden">載入中...</div>
+                    </div>
+
                 </div>
             </div>
 
             <!-- Footer Actions -->
-            <div class="px-6 py-3 bg-gray-50 border-t flex justify-between items-center">
+            <div class="px-6 py-3 bg-gray-50 border-t flex justify-between items-center shrink-0">
                 <button onclick="saveProfileChanges()" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold hover:underline">僅儲存資料修改</button>
                 <button onclick="closeAdminModal()" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100 text-sm">關閉</button>
             </div>
@@ -373,7 +765,6 @@
         // ==========================================
         const SUPABASE_URL = 'https://xnubbczorjzwlpbkjrfo.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudWJiY3pvcmp6d2xwYmtqcmZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5Mjg3MDEsImV4cCI6MjA4MDUwNDcwMX0.pqkraWF9WWHrKxInUHa3CaUWNt1twMZXkFyvxPIyVvs';
-        // BIP-39 Wordlist URL (使用 GitHub Raw)
         const BIP39_URL = 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt';
         // ==========================================
 
@@ -382,8 +773,9 @@
         let adminUsersCache = [];
         let authMode = 'login';
         
-        // 類別回饋設定
-        const CAT_RATES = { 'A': 0.10, 'B': 0.05, 'C': 0.03, 'D': 0.01 };
+        const CAT_RATES = { 
+            'A': 0.04, 'B': 0.01, 'C': 0.03, 'D': 0.00, 'E': 0.05 
+        };
 
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
             document.getElementById('config-overlay').classList.remove('hidden');
@@ -407,13 +799,34 @@
         }
 
         function switchView(name) {
-            // 隱藏所有主視圖
             document.getElementById('auth-view').classList.add('hidden');
             document.getElementById('user-view').classList.add('hidden');
             document.getElementById('admin-view').classList.add('hidden');
-            
-            // 顯示目標視圖
             document.getElementById(name + '-view').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // SIDEBAR LOGIC (NEW)
+        // ==========================================
+        function toggleSidebar(type) {
+            const container = document.getElementById(type + '-sidebar-container');
+            const panel = document.getElementById(type + '-sidebar-panel');
+            
+            if (container.classList.contains('hidden')) {
+                // Open
+                container.classList.remove('hidden');
+                // Allow a small delay for display:block to apply before transition
+                setTimeout(() => {
+                    panel.classList.remove('-translate-x-full');
+                }, 10);
+            } else {
+                // Close
+                panel.classList.add('-translate-x-full');
+                // Wait for transition to finish before hiding container
+                setTimeout(() => {
+                    container.classList.add('hidden');
+                }, 300);
+            }
         }
 
         // ==========================================
@@ -457,21 +870,17 @@
                     if (authMode === 'login') {
                         const { error } = await sbClient.auth.signInWithPassword({ email, password: pwd });
                         if(error) throw error;
-                        // 登入成功，onAuthStateChange 會處理跳轉
                     } else if (authMode === 'register') {
                         await handleRegister(email, pwd);
-                        // 註冊成功，onAuthStateChange 會處理跳轉
                     } else if (authMode === 'forgot') {
                         await handleResetPassword(email);
                     }
                 } catch (err) {
                     showMsg(err.message, true);
                 } finally {
-                    // 登入和註冊成功時，不應執行此處的 button 恢復，因為頁面會跳轉
                     if (authMode === 'forgot') {
                         btn.disabled = false; btn.innerText = '重設並登入';
                     } else if (authMode === 'login' || authMode === 'register') {
-                        // 如果有錯誤發生，再恢復按鈕狀態
                         if (document.getElementById('auth-message').classList.contains('bg-red-100')) {
                             btn.disabled = false; 
                             btn.innerText = authMode === 'login' ? '登入' : '確認註冊';
@@ -481,7 +890,6 @@
             };
         }
 
-        // Fetch BIP39 words from GitHub
         async function fetchBip39Words() {
             try {
                 const response = await fetch(BIP39_URL);
@@ -489,8 +897,6 @@
                 const text = await response.text();
                 return text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
             } catch (e) {
-                console.warn("GitHub fetch failed, using fallback list.");
-                // 極簡的 Fallback，防止完全無法運作 (實際專案應有更完善的錯誤處理)
                 return ['alpha','bravo','charlie','delta','echo','foxtrot','golf','hotel','india','juliet','kilo','lima','mike','november','oscar','papa','quebec','romeo','sierra','tango','uniform','victor','whiskey','xray','yankee','zulu'];
             }
         }
@@ -504,46 +910,37 @@
             document.getElementById('generated-mnemonic').classList.add('hidden');
             document.getElementById('mnemonic-modal').classList.remove('hidden');
 
-            // 1. 生成助記詞 (從網路抓取)
             const wordList = await fetchBip39Words();
             const selectedWords = [];
             for(let i=0; i<12; i++) {
                 selectedWords.push(wordList[Math.floor(Math.random() * wordList.length)]);
             }
-            const mnemonic = selectedWords.join(' '); // BIP-39 標準是用空格分隔
+            const mnemonic = selectedWords.join(' ');
 
             document.getElementById('mnemonic-loading').classList.add('hidden');
             document.getElementById('generated-mnemonic').innerText = mnemonic;
             document.getElementById('generated-mnemonic').classList.remove('hidden');
             
-            // 2. 註冊 Supabase
             const { data, error } = await sbClient.auth.signUp({ email, password });
             if(error) {
-                document.getElementById('mnemonic-modal').classList.add('hidden'); // 註冊失敗，關閉助記詞 Modal
+                document.getElementById('mnemonic-modal').classList.add('hidden');
                 throw error;
             }
 
-            // 3. 寫入 Profiles
             const { error: pErr } = await sbClient.from('profiles').insert([{
-                id: data.user.id, 
-                full_name: name, 
-                phone: phone, 
+                id: data.user.id, full_name: name, phone: phone, 
                 user_id_display: 'M' + Math.floor(100000 + Math.random() * 900000),
-                mnemonic: mnemonic, 
-                email: email
+                mnemonic: mnemonic, email: email
             }]);
             if(pErr) {
-                // 如果 Profile 寫入失敗，應該登出，避免資料不一致
                 await sbClient.auth.signOut();
                 document.getElementById('mnemonic-modal').classList.add('hidden');
                 throw pErr;
             }
-            // 註冊成功，保留 Modal，onAuthStateChange 會在使用者關閉 Modal 後觸發 loadProfile
         }
 
         function closeMnemonicModal() {
             document.getElementById('mnemonic-modal').classList.add('hidden');
-            // 當用戶關閉 Modal 時，如果已經註冊成功，onAuthStateChange 應該已經完成，會跳轉到主頁面
         }
 
         async function handleResetPassword(email) {
@@ -554,9 +951,7 @@
             if(!mnemonic || !newPwd) throw new Error('請填寫助記詞與新密碼');
 
             const { data, error } = await sbClient.rpc('reset_password_via_mnemonic', {
-                target_email: safeEmail, 
-                mnemonic_check: mnemonic, 
-                new_password: newPwd
+                target_email: safeEmail, mnemonic_check: mnemonic, new_password: newPwd
             });
 
             if (error) throw new Error('系統錯誤: ' + error.message);
@@ -567,41 +962,28 @@
         }
 
         async function loadProfile(uid) {
-            // 確認 Supabase 連線後，檢查 Profile
             const { data, error } = await sbClient.from('profiles').select('*').eq('id', uid).single();
-            if(error) { 
-                console.error('Failed to load profile:', error);
-                // 找不到 Profile，可能資料不完整，強制登出讓使用者重新註冊或登入
-                await sbClient.auth.signOut(); 
-                return; 
-            }
+            if(error) { await sbClient.auth.signOut(); return; }
             if(data.role === 'admin') { 
-                switchView('admin'); 
-                fetchUsers(); 
+                switchView('admin'); fetchUsers(); 
             } else { 
-                renderUserView(data); 
-                fetchUserLogs(uid); // 載入交易紀錄
-                switchUserTab('profile'); // 預設顯示個人頁面
-                switchView('user'); 
+                renderUserView(data); fetchUserLogs(uid); switchUserTab('profile'); switchView('user'); 
             }
         }
 
         // ==========================================
-        // User View Logic (Client)
+        // User View Logic
         // ==========================================
         function renderUserView(p) {
-            // 1. 點數與台幣換算 (1點 = 0.5 NTD)
             const points = p.points || 0;
             const twd = Math.floor(points * 0.5);
             
-            // 修正: 增加空值檢查以避免 'Cannot set properties of null' 錯誤
             const pointsDisplay = document.getElementById('user-points-display');
             if (pointsDisplay) pointsDisplay.innerText = points;
 
             const twdDisplay = document.getElementById('user-points-twd');
             if (twdDisplay) twdDisplay.innerText = twd; 
 
-            // 2. 基本資料
             const idDisplay = document.getElementById('user-id-display');
             if (idDisplay) idDisplay.innerText = p.user_id_display;
             
@@ -619,12 +1001,7 @@
             const container = document.getElementById('user-logs-container');
             container.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">載入中...</div>';
 
-            const { data, error } = await sbClient
-                .from('point_logs')
-                .select('*')
-                .eq('user_id', uid)
-                .order('created_at', { ascending: false })
-                .limit(20);
+            const { data, error } = await sbClient.from('point_logs').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(20);
 
             if(error || !data || data.length === 0) {
                 container.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">尚無交易紀錄</div>';
@@ -640,33 +1017,23 @@
                 
                 html += `
                 <div class="px-5 py-3 flex justify-between items-center hover:bg-gray-50 transition">
-                    <div>
-                        <div class="text-sm font-bold text-gray-800">${log.reason || '系統調整'}</div>
-                        <div class="text-xs text-gray-400">${date}</div>
-                    </div>
-                    <div class="font-mono font-bold ${colorClass}">
-                        ${sign}${log.change_amount}
-                    </div>
+                    <div><div class="text-sm font-bold text-gray-800">${log.reason || '系統調整'}</div><div class="text-xs text-gray-400">${date}</div></div>
+                    <div class="font-mono font-bold ${colorClass}">${sign}${log.change_amount}</div>
                 </div>`;
             });
             container.innerHTML = html;
         }
 
-        // 底部導覽列切換
         window.switchUserTab = function(target) {
-            // Update buttons
             document.querySelectorAll('.nav-item').forEach(btn => {
                 const isActive = btn.dataset.target === target;
                 btn.classList.toggle('active', isActive);
                 btn.classList.toggle('text-indigo-600', isActive);
                 btn.classList.toggle('text-gray-400', !isActive);
             });
-
-            // Update content
             ['shop', 'profile', 'info'].forEach(tab => {
                 const el = document.getElementById('tab-' + tab);
-                if(tab === target) el.classList.remove('hidden');
-                else el.classList.add('hidden');
+                if(tab === target) el.classList.remove('hidden'); else el.classList.add('hidden');
             });
         }
 
@@ -695,8 +1062,6 @@
 
             adminUsersCache.forEach(u => {
                 if(u.role === 'admin') return;
-                
-                // Search Logic: Name OR Phone
                 const matchName = (u.full_name || '').toLowerCase().includes(val);
                 const matchPhone = (u.phone || '').includes(val);
                 
@@ -705,45 +1070,110 @@
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-gray-50 border-b transition';
                     tr.innerHTML = `
-                        <td class="px-4 py-3">
-                            <div class="font-bold text-gray-800">${u.full_name}</div>
-                            <div class="text-xs text-gray-500 font-mono">${u.phone}</div>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-block px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold font-mono">
-                                ${u.points} P
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <button onclick="openAdminModal('${u.id}')" class="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded text-xs shadow-sm transition">
-                                管理
-                            </button>
-                        </td>`;
+                        <td class="px-4 py-3"><div class="font-bold text-gray-800">${u.full_name}</div><div class="text-xs text-gray-500 font-mono">${u.phone}</div></td>
+                        <td class="px-4 py-3 text-center"><span class="inline-block px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold font-mono">${u.points} P</span></td>
+                        <td class="px-4 py-3 text-right"><button onclick="openAdminModal('${u.id}')" class="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded text-xs shadow-sm transition">管理</button></td>`;
                     tbody.appendChild(tr);
                 }
             });
-
             document.getElementById('no-results').classList.toggle('hidden', count > 0);
         }
 
-        // Modal Logic
+        // Modal Views Logic
+        function showActionMenu() {
+            document.getElementById('admin-action-menu').classList.remove('hidden');
+            document.getElementById('admin-trans-form').classList.add('hidden');
+            document.getElementById('admin-history-view').classList.add('hidden');
+        }
+
+        function showTransForm() {
+            document.getElementById('admin-action-menu').classList.add('hidden');
+            document.getElementById('admin-trans-form').classList.remove('hidden');
+            // Reset form
+            document.getElementById('trans-product').value = '';
+            document.getElementById('trans-total').value = '';
+            document.getElementById('trans-category').value = 'A';
+            document.getElementById('trans-deduct').value = '';
+            document.getElementById('deduct-warning').innerText = '';
+            document.getElementById('trans-final-change').innerText = '0';
+        }
+
+        async function fetchAndShowHistory() {
+            document.getElementById('admin-action-menu').classList.add('hidden');
+            const historyView = document.getElementById('admin-history-view');
+            historyView.classList.remove('hidden');
+            
+            const tbody = document.getElementById('admin-history-tbody');
+            const loader = document.getElementById('admin-history-loading');
+            tbody.innerHTML = '';
+            loader.classList.remove('hidden');
+
+            const uid = document.getElementById('hidden-uid').value;
+            
+            const { data, error } = await sbClient.from('point_logs')
+                .select('*')
+                .eq('user_id', uid)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            loader.classList.add('hidden');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-xs text-gray-500">無交易紀錄</td></tr>';
+                return;
+            }
+
+            data.forEach(log => {
+                // Parsing logic: [A類] 拿鐵咖啡 $100 (獲+4, 折-10)
+                let category = '-', product = '-', amount = '-', deduct = '0';
+                const reason = log.reason || '';
+                
+                // Regex Extract
+                const catMatch = reason.match(/\[([A-E])類\]/);
+                if (catMatch) category = catMatch[1];
+
+                const mainMatch = reason.match(/\]\s+(.+)\s+\$(\d+)/);
+                if (mainMatch) {
+                    product = mainMatch[1];
+                    amount = mainMatch[2];
+                }
+
+                const deductMatch = reason.match(/折-(\d+)/);
+                if (deductMatch) deduct = deductMatch[1];
+
+                // Fallback for non-standard messages
+                if (!mainMatch && !catMatch) product = reason;
+
+                const changeClass = log.change_amount >= 0 ? 'text-green-600' : 'text-red-600';
+                const changeSign = log.change_amount > 0 ? '+' : '';
+                const dateStr = new Date(log.created_at).toLocaleDateString();
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">${dateStr}</td>
+                    <td class="px-3 py-2 text-xs text-gray-800">
+                        <div class="font-bold">${product}</div>
+                        <span class="inline-block px-1 bg-gray-100 rounded text-[10px] text-gray-500">${category}類</span>
+                    </td>
+                    <td class="px-3 py-2 text-right text-xs text-gray-800 font-mono">$${amount}</td>
+                    <td class="px-3 py-2 text-right text-xs text-red-500 font-mono">-${deduct}</td>
+                    <td class="px-3 py-2 text-right text-xs font-bold font-mono ${changeClass}">${changeSign}${log.change_amount}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function openAdminModal(uid) {
             const user = adminUsersCache.find(u => u.id === uid);
             document.getElementById('hidden-uid').value = uid;
-            document.getElementById('hidden-display-id').value = user.user_id_display; // 保留 ID 供備註使用
             
             document.getElementById('modal-user-subtitle').innerText = `#${user.user_id_display}`;
             document.getElementById('edit-current-points').innerText = user.points;
             document.getElementById('edit-name').value = user.full_name;
             document.getElementById('edit-phone').value = user.phone;
             
-            // Reset Transaction Fields
-            document.getElementById('trans-product').value = '';
-            document.getElementById('trans-total').value = '';
-            document.getElementById('trans-category').value = 'A';
-            document.getElementById('trans-calc-points').innerText = '0';
+            showActionMenu(); // Default to menu
             
-            // Animation
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
             setTimeout(() => {
@@ -759,51 +1189,76 @@
             setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
-        // 自動計算點數
         window.calculatePoints = function() {
             const amount = parseInt(document.getElementById('trans-total').value) || 0;
             const category = document.getElementById('trans-category').value;
             const rate = CAT_RATES[category] || 0;
-            const points = Math.floor(amount * rate);
-            document.getElementById('trans-calc-points').innerText = points;
+            
+            const deductInput = document.getElementById('trans-deduct');
+            const deductPoints = parseInt(deductInput.value) || 0;
+            const currentPoints = parseInt(document.getElementById('edit-current-points').innerText) || 0;
+            const warningSpan = document.getElementById('deduct-warning');
+
+            // Logic: (Amount - Deduct) * Rate
+            const effectiveAmount = Math.max(0, amount - deductPoints);
+            const earnedPoints = Math.floor(effectiveAmount * rate);
+            document.getElementById('hidden-calc-earned').value = earnedPoints;
+
+            if (deductPoints > currentPoints) {
+                warningSpan.innerText = `(超過上限: ${currentPoints})`;
+                deductInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+            } else {
+                warningSpan.innerText = '';
+                deductInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+            }
+
+            const finalChange = earnedPoints - deductPoints;
+            const displayEl = document.getElementById('trans-final-change');
+            displayEl.innerText = finalChange > 0 ? `+${finalChange}` : finalChange;
+            
+            if(finalChange > 0) displayEl.className = 'text-xl font-bold text-green-600';
+            else if(finalChange < 0) displayEl.className = 'text-xl font-bold text-red-600';
+            else displayEl.className = 'text-xl font-bold text-gray-500';
         }
 
         async function confirmTransaction() {
             const uid = document.getElementById('hidden-uid').value;
-            const displayId = document.getElementById('hidden-display-id').value;
-            
             const product = document.getElementById('trans-product').value;
             const category = document.getElementById('trans-category').value;
             const totalAmount = parseInt(document.getElementById('trans-total').value);
-            const pointsToAdd = parseInt(document.getElementById('trans-calc-points').innerText);
+            
+            const earnedPoints = parseInt(document.getElementById('hidden-calc-earned').value) || 0;
+            const deductPoints = parseInt(document.getElementById('trans-deduct').value) || 0;
+            const currentPoints = parseInt(document.getElementById('edit-current-points').innerText) || 0;
 
             if(!product) return showCustomAlert('請輸入產品名稱');
             if(!totalAmount || totalAmount <= 0) return showCustomAlert('請輸入有效金額');
+            if (deductPoints > currentPoints) return showCustomAlert('扣抵點數不可超過會員現有點數！');
 
-            // 組合備註字串：[A類] 拿鐵咖啡 $100
-            const reason = `[${category}類] ${product} $${totalAmount}`;
+            const finalChange = earnedPoints - deductPoints;
 
+            // Log Format: [A類] 拿鐵咖啡 $100 (獲+4, 折-10)
+            let details = `(獲+${earnedPoints}`;
+            if(deductPoints > 0) details += `, 折-${deductPoints}`;
+            details += `)`;
+            
+            const reason = `[${category}類] ${product} $${totalAmount} ${details}`;
             const btn = document.getElementById('btn-trans');
             btn.disabled = true; btn.innerText = '處理中...';
 
             try {
-                // 寫入 Log
                 const { error } = await sbClient.from('point_logs').insert([{
-                    user_id: uid,
-                    admin_id: currentUser.id,
-                    change_amount: pointsToAdd,
-                    reason: reason
+                    user_id: uid, admin_id: currentUser.id, change_amount: finalChange, reason: reason
                 }]);
-
                 if(error) throw error;
 
-                showCustomAlert('交易成功！已發送 ' + pointsToAdd + ' 點');
+                showCustomAlert('交易成功！點數變動: ' + finalChange);
                 closeAdminModal();
-                fetchUsers(); // Refresh list
+                fetchUsers(); 
             } catch(err) {
                 showCustomAlert('交易失敗：' + err.message);
             } finally {
-                btn.disabled = false; btn.innerText = '確認交易並發送點數';
+                btn.disabled = false; btn.innerText = '確認交易';
             }
         }
 
@@ -823,7 +1278,6 @@
             el.classList.remove('hidden');
         }
 
-        // Custom Alert Functions (取代所有 alert())
         window.showCustomAlert = function(message) {
             document.getElementById('custom-alert-message').innerText = message;
             document.getElementById('custom-alert-modal').classList.remove('hidden');
