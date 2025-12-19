@@ -243,6 +243,118 @@
         @keyframes hamsterBLLimb { from, 25%, 50%, 75%, to { transform: rotate(20deg); } 12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(-60deg); } }
         @keyframes hamsterTail { from, 25%, 50%, 75%, to { transform: rotate(30deg) translateZ(-1px); } 12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(10deg) translateZ(-1px); } }
         @keyframes spoke { from { transform: rotate(0); } to { transform: rotate(-1turn); } }
+
+        /* ========================================= */
+        /* NEW: Notification Card CSS (From Uiverse) */
+        /* ========================================= */
+        .notification {
+            display: flex;
+            flex-direction: column;
+            isolation: isolate;
+            position: relative;
+            width: 100%;
+            max-width: 20rem; /* 限制在手機上不要太寬，並稍微置中 */
+            height: auto;
+            min-height: 8rem;
+            background: #29292c;
+            border-radius: 1rem;
+            overflow: hidden;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            font-size: 16px;
+            --gradient: linear-gradient(to bottom, #2eadff, #3d83ff, #7e61ff);
+            --color: #32a6ff;
+            margin: 1.5rem auto; /* 上下邊距 + 水平置中 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .notification:before {
+            position: absolute;
+            content: "";
+            inset: 0.0625rem;
+            border-radius: 0.9375rem;
+            background: #18181b;
+            z-index: 2;
+        }
+
+        .notification:after {
+            position: absolute;
+            content: "";
+            width: 0.25rem;
+            inset: 0.65rem auto 0.65rem 0.5rem;
+            border-radius: 0.125rem;
+            background: var(--gradient);
+            transition: transform 300ms ease;
+            z-index: 4;
+        }
+
+        .notification:hover:after {
+            transform: translateX(0.15rem);
+        }
+
+        .notititle {
+            color: var(--color);
+            padding: 0.65rem 0.25rem 0.4rem 1.25rem;
+            font-weight: 500;
+            font-size: 1.1rem;
+            transition: transform 300ms ease;
+            z-index: 5;
+            position: relative;
+        }
+
+        .notification:hover .notititle {
+            transform: translateX(0.15rem);
+        }
+
+        .notibody {
+            color: #99999d;
+            padding: 0 1.25rem 1.25rem 1.25rem;
+            transition: transform 300ms ease;
+            z-index: 5;
+            position: relative;
+        }
+
+        .notification:hover .notibody {
+            transform: translateX(0.25rem);
+        }
+
+        .notiglow,
+        .notiborderglow {
+            position: absolute;
+            width: 20rem;
+            height: 20rem;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle closest-side at center, white, transparent);
+            opacity: 0;
+            transition: opacity 300ms ease;
+            pointer-events: none;
+        }
+
+        .notiglow {
+            z-index: 3;
+        }
+
+        .notiborderglow {
+            z-index: 1;
+        }
+
+        .notification:hover .notiglow {
+            opacity: 0.1;
+        }
+
+        .notification:hover .notiborderglow {
+            opacity: 0.1;
+        }
+
+        /* Card Stats Utility */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        .stat-label { color: #99999d; }
+        .stat-value { color: #e4e4e7; font-family: monospace; font-weight: bold; }
+
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
@@ -565,6 +677,35 @@
                         <div class="bg-indigo-50 p-3 rounded mt-2 text-center font-bold text-indigo-800">
                             1 點 = 0.5 元新台幣
                         </div>
+
+                        <!-- NEW: Point Issuance Card (Updated with Dynamic Logic) -->
+                        <div class="notification">
+                            <div class="notiglow"></div>
+                            <div class="notiborderglow"></div>
+                            <div class="notititle">點數概況</div>
+                            <div class="notibody">
+                                <div class="space-y-2 mt-1">
+                                    <div class="stat-row">
+                                        <span class="stat-label">點數總供給量 (Total supply)</span>
+                                        <span class="stat-value" id="stat-max-supply">500,000</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">點數上限 (Max. supply)</span>
+                                        <span class="stat-value" id="stat-max-supply">∞</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">已流通的總點數 (Circulating supply)</span>
+                                        <span class="stat-value" id="stat-circulating">計算中...</span>
+                                    </div>
+                                    <!-- Progress Bar Visual -->
+                                    <div class="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                                        <div id="stat-progress-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                                    </div>
+                                    <div id="stat-percentage-text" class="text-xs text-gray-500 text-right mt-1">0% 已鑄造</div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <hr class="border-gray-200">
@@ -869,6 +1010,7 @@
         let currentUser = null;
         let adminUsersCache = [];
         let authMode = 'login';
+        const MAX_SUPPLY = 500000;
         
         const CAT_RATES = { 
             'A': 0.04, 'B': 0.01, 'C': 0.03, 'D': 0.00, 'E': 0.05 
@@ -1092,6 +1234,33 @@
             
             const phoneDisplay = document.getElementById('user-phone-display');
             if (phoneDisplay) phoneDisplay.innerText = p.phone;
+
+            // Trigger circulation stats update
+            updateCirculationStats();
+        }
+
+        async function updateCirculationStats() {
+            // Fetch all user points to calculate total circulation
+            const { data, error } = await sbClient.from('profiles').select('points');
+            
+            let totalIssued = 0;
+            if (!error && data) {
+                // Sum up all points from all users
+                totalIssued = data.reduce((acc, curr) => acc + (curr.points || 0), 0);
+            }
+
+            // Calculate Percentage
+            const percentage = Math.min(100, (totalIssued / MAX_SUPPLY) * 100).toFixed(1);
+            
+            // Update UI Elements
+            const circEl = document.getElementById('stat-circulating');
+            if(circEl) circEl.innerText = totalIssued.toLocaleString();
+
+            const barEl = document.getElementById('stat-progress-bar');
+            if(barEl) barEl.style.width = `${percentage}%`;
+
+            const textEl = document.getElementById('stat-percentage-text');
+            if(textEl) textEl.innerText = `${percentage}% 已鑄造`;
         }
 
         async function fetchUserLogs(uid) {
