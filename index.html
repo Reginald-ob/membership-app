@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>會員積分管理系統 Pro</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -117,11 +115,19 @@
         .notification:hover .notiglow { opacity: 0.1; } .notification:hover .notiborderglow { opacity: 0.1; }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.9rem; }
         .stat-label { color: #99999d; } .stat-value { color: #e4e4e7; font-family: monospace; font-weight: bold; }
+        
+        /* Stepper Styles */
+        .stepper-item { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .stepper-circle { width: 30px; height: 30px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; color: #9ca3af; transition: all 0.3s; }
+        .stepper-item.active .stepper-circle { background-color: #8b5cf6; color: white; }
+        .stepper-label { font-size: 10px; margin-top: 5px; color: #9ca3af; font-weight: bold; transition: all 0.3s; }
+        .stepper-item.active .stepper-label { color: #8b5cf6; }
+        .stepper-line { position: absolute; top: 15px; left: calc(-50% + 15px); right: calc(50% + 15px); height: 2px; background-color: #e5e7eb; z-index: 0; transition: all 0.3s; }
+        .stepper-item.active .stepper-line { background-color: #8b5cf6; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
 
-    <!-- Config Overlay -->
     <div id="config-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex items-center justify-center">
         <div class="bg-white p-8 rounded shadow-lg max-w-md text-center">
             <h2 class="text-xl font-bold mb-4 text-red-600">系統尚未設定</h2>
@@ -129,7 +135,6 @@
         </div>
     </div>
 
-    <!-- 1. Auth View -->
     <div id="auth-view" class="h-full flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm relative my-auto">
             <h1 id="auth-title" class="text-2xl font-bold text-center mb-6 text-gray-800">會員登入</h1>
@@ -176,7 +181,6 @@
         </div>
     </div>
 
-    <!-- 2. Mnemonic Modal -->
     <div id="mnemonic-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 text-center">
             <div class="text-5xl text-yellow-500 mb-4 flex justify-center"><i class="ph ph-shield-warning"></i></div>
@@ -190,10 +194,8 @@
         </div>
     </div>
 
-    <!-- 3. User View -->
     <div id="user-view" class="hidden h-full flex flex-col relative bg-gray-50">
         
-        <!-- SIDEBAR: User -->
         <div id="user-sidebar-container" class="fixed inset-0 z-[60] hidden">
             <div class="absolute inset-0 bg-black bg-opacity-50 transition-opacity" onclick="toggleSidebar('user')"></div>
             <div id="user-sidebar-panel" class="absolute top-0 bottom-0 left-0 w-64 bg-gray-900 text-white shadow-xl transform -translate-x-full sidebar-panel flex flex-col">
@@ -256,7 +258,6 @@
             </div>
         </div>
 
-        <!-- Tab 1: 商城 -->
         <div id="tab-shop" class="flex-1 overflow-y-auto user-content-area hidden">
             <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3">
                 <button class="reward-btn" onclick="toggleSidebar('user')">
@@ -284,7 +285,6 @@
             </div>
         </div>
 
-        <!-- NEW TAB: 訂單查詢 -->
         <div id="tab-orders" class="flex-1 overflow-y-auto user-content-area hidden">
             <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3">
                 <button class="reward-btn" onclick="toggleSidebar('user')">
@@ -307,8 +307,25 @@
                 </button>
                 <h2 class="text-xl font-bold text-gray-800">購物車與訂單</h2>
             </div>
+            
             <div class="p-4 space-y-6">
-                <!-- Cart Section -->
+                <div class="w-full flex justify-between items-start mb-2 px-2">
+                    <div class="stepper-item" id="step-1">
+                        <div class="stepper-circle">1</div>
+                        <div class="stepper-label">送出訂單</div>
+                    </div>
+                    <div class="stepper-item" id="step-2">
+                        <div class="stepper-line"></div>
+                        <div class="stepper-circle">2</div>
+                        <div class="stepper-label">銀行轉帳</div>
+                    </div>
+                    <div class="stepper-item" id="step-3">
+                        <div class="stepper-line"></div>
+                        <div class="stepper-circle">3</div>
+                        <div class="stepper-label">確認付款</div>
+                    </div>
+                </div>
+
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider">未送出訂單 (購物車)</h3>
@@ -317,12 +334,20 @@
                     <div id="cart-container" class="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
                         <div class="text-center text-gray-400 text-sm mt-4">購物車是空的</div>
                     </div>
+                    
                     <button onclick="openDeliveryModal()" id="btn-submit-order" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
                         送出訂單
                     </button>
+                    
+                    <button onclick="handleBankTransferClick()" id="btn-bank-transfer" class="w-full mt-3 bg-gray-300 text-white font-bold py-3 rounded shadow-md cursor-not-allowed transition" disabled>
+                        <i class="ph ph-bank mr-1"></i> 銀行轉帳
+                    </button>
+                    
+                    <button onclick="openPaymentModal()" id="btn-confirm-payment" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded shadow-md transition">
+                        <i class="ph ph-check-circle mr-1"></i> 確認付款
+                    </button>
                 </div>
 
-                <!-- History Section -->
                 <div>
                     <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">歷史訂單</h3>
                     <div id="orders-history-container" class="space-y-3">
@@ -332,7 +357,6 @@
             </div>
         </div>
 
-        <!-- Tab 2: 會員中心 (中) -->
         <div id="tab-profile" class="flex-1 overflow-y-auto user-content-area">
             <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white relative rounded-b-[2rem] shadow-lg pb-8 pt-4 px-6 mb-4">
                 <div class="absolute top-4 left-4">
@@ -382,7 +406,6 @@
             </div>
         </div>
 
-        <!-- Tab 3: 權益說明 (右) -->
         <div id="tab-info" class="flex-1 overflow-y-auto user-content-area hidden bg-white">
             <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3 border-b">
                 <button class="reward-btn" onclick="toggleSidebar('user')">
@@ -444,7 +467,6 @@
             </div>
         </div>
 
-        <!-- Bottom Navigation -->
         <div class="fixed bottom-0 w-full bg-white border-t border-gray-200 h-[70px] flex justify-around items-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
             <button onclick="switchUserTab('shop')" class="nav-item flex flex-col items-center gap-1 text-gray-400 w-full h-full justify-center hover:bg-gray-50" data-target="shop">
                 <i class="ph ph-shopping-cart text-2xl"></i><span class="text-[18px] font-medium">商城</span>
@@ -458,7 +480,6 @@
         </div>
     </div>
 
-    <!-- Product Detail Modal -->
     <div id="product-modal" class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all h-[90vh] sm:h-auto flex flex-col">
             <div class="relative h-64 bg-gray-200">
@@ -475,7 +496,6 @@
                     <div class="flex gap-3" id="modal-options"></div>
                 </div>
                 
-                <!-- New: Quantity Input -->
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">數量</label>
                     <div class="flex items-center border border-gray-300 rounded-lg w-32">
@@ -491,7 +511,6 @@
         </div>
     </div>
 
-    <!-- New: Delivery Modal -->
     <div id="delivery-modal" class="fixed inset-0 z-[85] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform transition-all">
             <div class="bg-gray-50 px-6 py-4 border-b">
@@ -520,10 +539,61 @@
             </div>
         </div>
     </div>
+    
+    <div id="bank-info-modal" class="fixed inset-0 z-[90] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden transform transition-all text-center">
+             <div class="bg-gray-800 text-white px-6 py-4">
+                <i class="ph ph-bank text-3xl mb-1 block"></i>
+                <h3 class="text-lg font-bold">匯款資訊</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="text-left bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500">銀行代號</p>
+                    <p class="font-bold text-gray-800">012 台北富邦銀行</p>
+                </div>
+                 <div class="text-left bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500">收款帳號</p>
+                    <p class="font-bold text-gray-800 font-mono tracking-wider">888-168-999-000</p>
+                </div>
+                 <div class="text-left bg-indigo-50 p-3 rounded border border-indigo-100">
+                    <p class="text-xs text-indigo-500">應付總金額</p>
+                    <p class="font-bold text-indigo-700 text-xl font-mono" id="bank-modal-total">NT$ 0</p>
+                </div>
+                <p class="text-xs text-gray-400">請完成轉帳後，點擊「確認付款」填寫資料。</p>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50">
+                <button onclick="document.getElementById('bank-info-modal').classList.add('hidden')" class="w-full py-2 bg-gray-800 text-white rounded hover:bg-gray-700 font-bold text-sm">我知道了</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- 4. Admin View -->
+    <div id="payment-confirm-modal" class="fixed inset-0 z-[90] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform transition-all">
+            <div class="bg-purple-600 px-6 py-4 border-b text-white">
+                <h3 class="text-lg font-bold"><i class="ph ph-receipt-x mr-2"></i>回報付款資料</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                 <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">匯款人姓名</label>
+                    <input type="text" id="pay-name" placeholder="請輸入姓名" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">聯絡電話</label>
+                    <input type="tel" id="pay-phone" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">帳號末 5 碼</label>
+                    <input type="text" id="pay-last5" placeholder="12345" maxlength="5" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 font-mono tracking-widest text-center">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-2">
+                <button onclick="document.getElementById('payment-confirm-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium">取消</button>
+                <button onclick="submitPaymentProof()" id="btn-submit-proof" class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-bold shadow-sm">送出資料</button>
+            </div>
+        </div>
+    </div>
+
     <div id="admin-view" class="h-full flex flex-col hidden bg-gray-100">
-        <!-- Admin Sidebar -->
         <div id="admin-sidebar-container" class="fixed inset-0 z-[60] hidden">
             <div class="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onclick="toggleSidebar('admin')"></div>
             <div id="admin-sidebar-panel" class="absolute top-0 bottom-0 left-0 w-64 bg-white text-gray-800 shadow-xl transform -translate-x-full sidebar-panel flex flex-col">
@@ -542,7 +612,6 @@
             </div>
         </div>
 
-        <!-- Admin Header -->
         <div class="bg-white shadow px-6 py-4 flex justify-between items-center z-10 sticky top-0">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar('admin')" class="text-gray-600 hover:text-indigo-600"><i class="ph ph-list text-2xl"></i></button>
@@ -551,7 +620,6 @@
             <button onclick="handleLogout()" class="text-sm text-gray-500 hover:text-red-600 font-medium px-3 py-1 border rounded hover:bg-gray-50 hidden md:block">登出</button>
         </div>
         
-        <!-- Search Bar -->
         <div class="p-4 bg-white border-b flex gap-2 shadow-sm">
             <div class="relative flex-1">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -561,7 +629,6 @@
             <button onclick="fetchUsers()" class="bg-indigo-600 text-white px-4 py-2 rounded shadow-sm hover:bg-indigo-700 active:scale-95 transition"><i class="ph ph-arrows-clockwise text-lg"></i></button>
         </div>
 
-        <!-- User Table -->
         <div class="flex-1 overflow-auto p-4">
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -579,7 +646,6 @@
         </div>
     </div>
 
-    <!-- 5. Admin Modal -->
     <div id="admin-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 transform transition-all scale-100 h-[85vh] flex flex-col">
             <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center shrink-0">
@@ -618,7 +684,6 @@
                         <div class="overflow-x-auto border rounded-lg border-gray-200"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left text-xs font-bold text-gray-500 whitespace-nowrap">日期</th><th class="px-3 py-2 text-left text-xs font-bold text-gray-500">項目</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">金額</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">折抵</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">變動</th></tr></thead><tbody id="admin-history-tbody" class="bg-white divide-y divide-gray-200"></tbody></table></div>
                         <div id="admin-history-loading" class="text-center py-4 text-gray-400 text-xs hidden">載入中...</div>
                     </div>
-                    <!-- New: Admin Order List View -->
                     <div id="admin-order-list-view" class="hidden animate-fade-in h-full flex flex-col">
                         <div class="flex items-center justify-between mb-3"><h4 id="admin-order-list-title" class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-receipt text-blue-600"></i> 用戶訂單列表</h4><button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button></div>
                         <div id="admin-order-list-container" class="space-y-3 overflow-y-auto max-h-[400px]"></div>
@@ -633,7 +698,6 @@
         </div>
     </div>
 
-    <!-- Custom Alert Modal -->
     <div id="custom-alert-modal" class="fixed inset-0 z-[90] flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full text-center">
             <p id="custom-alert-message" class="text-gray-700 mb-4"></p>
@@ -677,7 +741,16 @@
         let adminUsersCache = [];
         let authMode = 'login';
         let currentProduct = null;
-        let pendingOrderUserIds = new Set(); // Cache for users with active orders
+        let pendingOrderUserIds = new Set(); 
+        
+        // Logic for Stepper & Payment
+        let hasDrafts = false;
+        let hasActiveOrders = false;
+        let bankTransferClicked = false;
+        let unpaidTotal = 0;
+
+        //判斷是否所有活躍訂單都已付款的旗標
+        let isAllOrdersSettled = false;
 
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
             document.getElementById('config-overlay').classList.remove('hidden');
@@ -838,6 +911,8 @@
             document.getElementById('user-id-display').innerText = p.user_id_display;
             document.getElementById('user-name-display').innerText = p.full_name;
             document.getElementById('user-phone-display').innerText = p.phone;
+            // Prefill payment form phone
+            document.getElementById('pay-phone').value = p.phone;
             updateCirculationStats();
         }
 
@@ -928,7 +1003,7 @@
             input.value = val;
         }
 
-        // Add to Cart (Status: draft)
+        // Add to Cart
         window.addToCart = async function() {
             if(!currentUser) return;
             const btn = document.getElementById('btn-add-cart');
@@ -936,25 +1011,24 @@
             const qty = parseInt(document.getElementById('modal-qty').value);
             
             btn.disabled = true; btn.innerText = "處理中...";
-            // Insert with status 'draft'
+            // Insert with status 'draft' and payment_status 'unpaid'
             const orderData = { 
                 user_id: currentUser.id, 
                 product_name: currentProduct.title, 
                 price: currentProduct.price, 
                 variant: selectedOpt, 
                 quantity: qty,
-                status: 'draft' 
+                status: 'draft',
+                payment_status: 'unpaid'
             };
             try {
                 const { error } = await sbClient.from('orders').insert([orderData]);
                 if (error) throw error;
                 showCustomAlert("已加入訂單列表！");
                 closeProductModal();
-                // Optionally switch to order tab or update badge? User asked to list in order page.
-            } catch (err) { showCustomAlert("加入失敗：請確認資料庫 schema 更新"); console.error(err); } finally { btn.disabled = false; btn.innerText = "加入購物車 (訂單列表)"; }
+            } catch (err) { showCustomAlert("加入失敗：" + err.message); console.error(err); } finally { btn.disabled = false; btn.innerText = "加入購物車 (訂單列表)"; }
         }
 
-        // Delete Cart Item Function
         window.deleteOrder = async function(oid) {
             if(!confirm('確定將此商品移出購物車？')) return;
             const { error } = await sbClient.from('orders').delete().eq('id', oid);
@@ -962,13 +1036,14 @@
             else fetchUserOrders();
         }
 
-        // Fetch Orders (Split into Drafts and History)
+        // UPDATE: Fetch Orders & Stepper Logic
         async function fetchUserOrders() {
             if(!currentUser) return;
             const cartContainer = document.getElementById('cart-container');
             const historyContainer = document.getElementById('orders-history-container');
             const totalDisplay = document.getElementById('cart-total-display');
             const submitBtn = document.getElementById('btn-submit-order');
+            const bankBtn = document.getElementById('btn-bank-transfer');
             
             cartContainer.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4">載入中...</div>';
             historyContainer.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4">載入中...</div>';
@@ -979,9 +1054,37 @@
 
             const drafts = data.filter(o => o.status === 'draft');
             const history = data.filter(o => o.status !== 'draft');
+            
+            // Logic for Buttons and Stepper
+            hasDrafts = drafts.length > 0;
+            // Active orders for payment: Not draft, not cancelled, not completed.
+            const activeOrders = history.filter(o => !['completed', 'cancelled'].includes(o.status));
+            hasActiveOrders = activeOrders.length > 0;
+            
+            // 計算未付款金額，並同時更新「全部結清」的狀態
+            unpaidTotal = activeOrders
+                .filter(o => o.payment_status !== 'paid')
+                .reduce((acc, o) => acc + (o.price * (o.quantity || 1)), 0);
+            
+            // 當有活躍訂單，且每一筆的狀態都是 'paid' 時，視為全部結清
+            isAllOrdersSettled = hasActiveOrders && activeOrders.every(o => o.payment_status === 'paid');
+
+            // Bank Btn State
+            if (hasActiveOrders) {
+                bankBtn.disabled = false;
+                bankBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                bankBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                bankBtn.disabled = true;
+                bankBtn.classList.add('bg-gray-300', 'cursor-not-allowed');
+                bankBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                bankTransferClicked = false; // Reset if no active orders
+            }
+            
+            updateStepper();
 
             // Render Drafts
-            if(drafts.length === 0) {
+            if(!hasDrafts) {
                 cartContainer.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4">購物車是空的</div>';
                 totalDisplay.innerText = "NT$ 0";
                 submitBtn.disabled = true;
@@ -1005,21 +1108,23 @@
                 submitBtn.disabled = false;
             }
 
-            // Render History with Status Mapping
+            // Render History with Payment Status
             if(history.length === 0) {
                 historyContainer.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4">尚無歷史訂單</div>';
             } else {
                 historyContainer.innerHTML = history.map(order => {
                     const date = new Date(order.created_at).toLocaleDateString();
-                    // Use STATUS_DEFINITIONS for label and color
                     const statusDef = STATUS_DEFINITIONS[order.status] || STATUS_DEFINITIONS['pending'];
-                    
                     const deliveryInfo = order.delivery_method === '7-11' ? `(7-11 ${order.delivery_info})` : '(到店取貨)';
-                    
-                    // Style logic for Completed/Cancelled
                     const isFinished = ['completed', 'cancelled'].includes(order.status);
                     const textStyle = isFinished ? 'text-gray-400 line-through' : 'text-gray-800';
                     const priceStyle = isFinished ? 'text-gray-400 line-through' : 'text-gray-900';
+                    
+                    // Payment Status Badge
+                    const isPaid = order.payment_status === 'paid';
+                    const payBadge = isPaid 
+                        ? '<span class="text-xs font-bold text-green-600 bg-green-50 px-1 rounded ml-1">已付款</span>' 
+                        : '<span class="text-xs font-bold text-red-500 bg-red-50 px-1 rounded ml-1">未付款</span>';
 
                     return `<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center">
                         <div>
@@ -1029,10 +1134,95 @@
                         </div>
                         <div class="text-right">
                             <div class="font-mono font-bold mb-1 ${priceStyle}">$${order.price * (order.quantity||1)}</div>
-                            <span class="inline-block px-2 py-1 rounded-full text-xs font-bold ${statusDef.class}">${statusDef.label}</span>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="inline-block px-2 py-1 rounded-full text-xs font-bold ${statusDef.class}">${statusDef.label}</span>
+                                ${payBadge}
+                            </div>
                         </div>
                     </div>`;
                 }).join('');
+            }
+        }
+
+        // Logic to update stepper colors
+        function updateStepper() {
+            const s1 = document.getElementById('step-1');
+            const s2 = document.getElementById('step-2');
+            const s3 = document.getElementById('step-3');
+            
+            // Reset
+            [s1, s2, s3].forEach(el => el.classList.remove('active'));
+
+            // [新增] 優先判斷：若訂單全部結清，3個燈號常亮 (紫色)
+            if (isAllOrdersSettled) {
+                 s1.classList.add('active');
+                 s2.classList.add('active');
+                 s3.classList.add('active');
+                 return; // 直接返回，不再執行後續邏輯
+            }
+
+            // Step 1 Purple: If unsubmitted drafts exist
+            if (hasDrafts) {
+                s1.classList.add('active');
+            }
+            
+            // Step 1 & 2 Purple: If bank transfer clicked (simulating flow progress)
+            if (bankTransferClicked) {
+                 s1.classList.add('active');
+                 s2.classList.add('active');
+            }
+        }
+
+        // New Button Handlers
+        window.handleBankTransferClick = function() {
+            if (!hasActiveOrders) return;
+            bankTransferClicked = true;
+            updateStepper();
+            document.getElementById('bank-modal-total').innerText = `NT$ ${unpaidTotal}`;
+            document.getElementById('bank-info-modal').classList.remove('hidden');
+        }
+
+        window.openPaymentModal = function() {
+            // [新增] 如果訂單已全部結清，顯示彈窗通知並阻擋表單開啟
+            if (isAllOrdersSettled) {
+                showCustomAlert('你的訂單已全部結清');
+                return;
+            }
+            document.getElementById('payment-confirm-modal').classList.remove('hidden');
+        }
+        window.submitPaymentProof = async function() {
+            const name = document.getElementById('pay-name').value;
+            const phone = document.getElementById('pay-phone').value;
+            const last5 = document.getElementById('pay-last5').value;
+            
+            if(!name || !phone || !last5) return showCustomAlert('請完整填寫所有欄位');
+            if(last5.length !== 5) return showCustomAlert('帳號末5碼長度不正確');
+
+            const btn = document.getElementById('btn-submit-proof');
+            btn.disabled = true; btn.innerText = '傳送中...';
+
+            try {
+                const { error } = await sbClient.from('payment_proofs').insert([{
+                    user_id: currentUser.id,
+                    payer_name: name,
+                    payer_phone: phone,
+                    last_five_digits: last5
+                }]);
+
+                if(error) throw error;
+                
+                showCustomAlert('付款資料已送出！我們將盡快核對。');
+                document.getElementById('payment-confirm-modal').classList.add('hidden');
+                
+                // Set Visual Step 3 active
+                document.getElementById('step-1').classList.add('active');
+                document.getElementById('step-2').classList.add('active');
+                document.getElementById('step-3').classList.add('active');
+                
+            } catch(e) {
+                showCustomAlert('送出失敗: ' + e.message);
+            } finally {
+                btn.disabled = false; btn.innerText = '送出資料';
             }
         }
 
@@ -1060,7 +1250,6 @@
             btn.disabled = true; btn.innerText = "處理中...";
 
             try {
-                // Update all 'draft' orders for this user to 'pending'
                 const { error } = await sbClient.from('orders')
                     .update({ status: 'pending', delivery_method: method, delivery_info: info })
                     .eq('user_id', currentUser.id)
@@ -1068,9 +1257,9 @@
                 
                 if(error) throw error;
                 
-                showCustomAlert("訂單已送出！");
+                showCustomAlert("訂單已送出！請繼續進行匯款步驟。");
                 closeDeliveryModal();
-                fetchUserOrders();
+                fetchUserOrders(); // Updates UI and stepper logic
             } catch(err) { showCustomAlert("送出失敗"); console.error(err); } 
             finally { btn.disabled = false; btn.innerText = "確認送出"; }
         }
@@ -1080,16 +1269,12 @@
             const btn = document.querySelector('#admin-view button i.ph-arrows-clockwise').parentElement;
             btn.classList.add('animate-spin');
             
-            // 1. Fetch Users
             const { data: users } = await sbClient.from('profiles').select('*').order('created_at', {ascending: false});
             adminUsersCache = users || [];
 
-            // 2. Fetch Pending Orders to identify users (Optimized)
-            // Active statuses: everything EXCEPT draft, completed, cancelled
             const activeStatuses = ['pending', 'preparing', 'out_of_stock', 'pre_order', 'shipped', 'ready_pickup'];
             const { data: orders } = await sbClient.from('orders').select('user_id').in('status', activeStatuses);
             
-            // Create a Set of user_ids that have pending orders
             pendingOrderUserIds = new Set(orders ? orders.map(o => o.user_id) : []);
 
             filterUsers(document.getElementById('admin-search').value);
@@ -1149,15 +1334,13 @@
             });
         }
 
-        // New: Admin Fetch User Orders with Filter
-        let currentAdminOrderFilter = 'active'; // 'active' or 'history'
+        let currentAdminOrderFilter = 'active';
 
         async function fetchAdminUserOrders(mode = 'active') {
-            currentAdminOrderFilter = mode; // store state
+            currentAdminOrderFilter = mode; 
             document.getElementById('admin-action-menu').classList.add('hidden');
             document.getElementById('admin-order-list-view').classList.remove('hidden');
             
-            // Update Title
             const titleEl = document.getElementById('admin-order-list-title');
             titleEl.innerHTML = mode === 'active' 
                 ? `<i class="ph ph-hourglass-high text-orange-600"></i> 用戶未處理訂單`
@@ -1168,7 +1351,6 @@
             container.innerHTML = ''; loader.classList.remove('hidden');
             
             const uid = document.getElementById('hidden-uid').value;
-            // Fetch all non-draft orders
             const { data, error } = await sbClient.from('orders').select('*').eq('user_id', uid).neq('status', 'draft').order('created_at', { ascending: false });
             
             loader.classList.add('hidden');
@@ -1182,7 +1364,6 @@
                 return;
             }
 
-            // Client-side Filtering
             const finishedStatuses = ['completed', 'cancelled'];
             const filteredData = data.filter(o => {
                 const isFinished = finishedStatuses.includes(o.status);
@@ -1196,31 +1377,32 @@
 
             container.innerHTML = filteredData.map(o => {
                 const date = new Date(o.created_at).toLocaleDateString();
-                const isDraft = o.status === 'draft';
                 let controlUI = '';
-                let methodText = '';
+                const methodText = o.delivery_method === '7-11' ? `<span class="text-orange-600 font-bold">7-11 ${o.delivery_info}</span>` : '<span class="text-indigo-600 font-bold">到店取貨</span>';
+                
+                const options = Object.keys(STATUS_DEFINITIONS).map(key => 
+                    `<option value="${key}" ${o.status === key ? 'selected' : ''}>${STATUS_DEFINITIONS[key].label}</option>`
+                ).join('');
 
-                if (isDraft) {
-                    controlUI = `<span class="bg-gray-200 text-gray-500 px-2 py-1 rounded text-xs font-bold">用戶未送出 (購物車)</span>`;
-                    methodText = '<span class="text-gray-400">尚未選擇</span>';
-                } else {
-                    methodText = o.delivery_method === '7-11' ? `<span class="text-orange-600 font-bold">7-11 ${o.delivery_info}</span>` : '<span class="text-indigo-600 font-bold">到店取貨</span>';
-                    
-                    const options = Object.keys(STATUS_DEFINITIONS).map(key => 
-                        `<option value="${key}" ${o.status === key ? 'selected' : ''}>${STATUS_DEFINITIONS[key].label}</option>`
-                    ).join('');
+                // NEW: Payment Status Select
+                const payOptions = `
+                    <option value="unpaid" ${o.payment_status !== 'paid' ? 'selected' : ''}>未付款</option>
+                    <option value="paid" ${o.payment_status === 'paid' ? 'selected' : ''}>已付款</option>
+                `;
 
-                    controlUI = `
-                        <div class="flex items-center gap-2">
-                            <select id="status-select-${o.id}" class="text-xs border border-gray-300 rounded p-1 bg-white outline-none focus:border-indigo-500 cursor-pointer hover:bg-gray-100">
-                                ${options}
-                            </select>
-                            <button onclick="saveOrderStatus('${o.id}')" class="bg-indigo-600 text-white text-xs px-2 py-1 rounded hover:bg-indigo-700 font-bold shadow-sm">
-                                儲存
-                            </button>
-                        </div>
-                    `;
-                }
+                controlUI = `
+                    <div class="flex items-center gap-1 mt-1">
+                        <select id="status-select-${o.id}" class="text-xs border border-gray-300 rounded p-1 bg-white outline-none focus:border-indigo-500 cursor-pointer">
+                            ${options}
+                        </select>
+                        <select id="pay-select-${o.id}" class="text-xs border border-gray-300 rounded p-1 bg-white outline-none focus:border-indigo-500 cursor-pointer ${o.payment_status==='paid'?'text-green-600 font-bold':'text-red-500'}">
+                            ${payOptions}
+                        </select>
+                        <button onclick="saveOrderStatus('${o.id}')" class="bg-indigo-600 text-white text-xs px-2 py-1 rounded hover:bg-indigo-700 font-bold shadow-sm">
+                            儲存
+                        </button>
+                    </div>
+                `;
 
                 return `<div class="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
                     <div class="flex justify-between mb-1">
@@ -1231,7 +1413,7 @@
                         <span>規格: ${o.variant}</span>
                         <span>${date}</span>
                     </div>
-                    <div class="mt-2 pt-2 border-t border-gray-200 flex justify-between items-center flex-wrap gap-2">
+                    <div class="mt-2 pt-2 border-t border-gray-200 flex flex-col gap-2">
                         <div class="text-xs">配送: ${methodText}</div>
                         ${controlUI}
                     </div>
@@ -1239,20 +1421,22 @@
             }).join('');
         }
 
-        // New: Save Order Status Function (Replaces updateOrderStatus)
+        // Updated Save Function: Saves both Order Status and Payment Status
         window.saveOrderStatus = async function(oid) {
-            const selectEl = document.getElementById(`status-select-${oid}`);
-            const newStatus = selectEl.value;
-            const btn = selectEl.nextElementSibling; // The save button
+            const statusSelect = document.getElementById(`status-select-${oid}`);
+            const paySelect = document.getElementById(`pay-select-${oid}`);
+            const newStatus = statusSelect.value;
+            const newPayStatus = paySelect.value;
+            const btn = paySelect.nextElementSibling; 
             
-            // UI Feedback
             const originalText = btn.innerText;
             btn.innerText = '...';
             btn.disabled = true;
 
-            const { error } = await sbClient.from('orders').update({ status: newStatus }).eq('id', oid);
+            const { error } = await sbClient.from('orders')
+                .update({ status: newStatus, payment_status: newPayStatus })
+                .eq('id', oid);
             
-            // Restore UI
             btn.innerText = originalText;
             btn.disabled = false;
 
@@ -1261,8 +1445,7 @@
                 showCustomAlert('更新狀態失敗，請稍後再試');
             } else {
                 showCustomAlert('訂單狀態已成功更新！');
-                fetchAdminUserOrders(currentAdminOrderFilter); // Reload current view
-                // Also refresh main user list to update notification dots if needed
+                fetchAdminUserOrders(currentAdminOrderFilter); 
                 fetchUsers(); 
             }
         }
