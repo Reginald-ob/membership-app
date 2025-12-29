@@ -488,9 +488,9 @@
                                 <div class="space-y-2 mt-1">
                                     <div class="stat-row"><span class="stat-label">點數總供給量 (Total supply)</span><span class="stat-value" id="stat-max-supply">500,000</span></div>
                                     <div class="stat-row"><span class="stat-label">點數上限 (Max. supply)</span><span class="stat-value" id="stat-max-supply">∞</span></div>
-                                    <div class="stat-row"><span class="stat-label">已流通的總點數 (Circulating supply)</span><span class="stat-value" id="stat-circulating">計算中...</span></div>
+                                    <div class="stat-row"><span class="stat-label">流通供給量 (Circulating supply)</span><span class="stat-value" id="stat-circulating">計算中...</span></div>
                                     <div class="w-full bg-gray-700 rounded-full h-1.5 mt-2"><div id="stat-progress-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
-                                    <div id="stat-percentage-text" class="text-xs text-gray-500 text-right mt-1">0% 已鑄造</div>
+                                    <div id="stat-percentage-text" class="text-xs text-gray-500 text-right mt-1">0% 歷史總鑄造量 (Total Minted)</div>
                                 </div>
                             </div>
                         </div>
@@ -1022,14 +1022,28 @@
         }
 
         async function updateCirculationStats() {
-            const { data } = await sbClient.from('profiles').select('points');
-            let total = 0;
-            if(data) total = data.reduce((acc, c) => acc + (c.points||0), 0);
-            document.getElementById('stat-circulating').innerText = total.toLocaleString();
-            const pct = Math.min(100, (total/MAX_SUPPLY)*100).toFixed(1);
-            document.getElementById('stat-progress-bar').style.width = pct+'%';
-            document.getElementById('stat-percentage-text').innerText = pct+'% 已鑄造';
-        }
+                    // [修正] 改為從 point_logs 獲取所有「正向增加」的紀錄 (即總鑄造量)
+                    // .gt('change_amount', 0) 確保只計算發出去的點數，不扣除已消耗的
+                    const { data, error } = await sbClient
+                        .from('point_logs')
+                        .select('change_amount')
+                        .gt('change_amount', 0);
+
+                    let total = 0;
+                    
+                    if (!error && data) {
+                        // 加總所有正向變動的金額
+                        total = data.reduce((acc, c) => acc + (c.change_amount || 0), 0);
+                    }
+
+                    // 更新 UI 顯示
+                    document.getElementById('stat-circulating').innerText = total.toLocaleString();
+                    
+                    // 計算百分比 (分母為 MAX_SUPPLY)
+                    const pct = Math.min(100, (total / MAX_SUPPLY) * 100).toFixed(1);
+                    document.getElementById('stat-progress-bar').style.width = pct + '%';
+                    document.getElementById('stat-percentage-text').innerText = pct + '% 已鑄造';
+                }
 
         async function fetchUserLogs(uid) {
             const container = document.getElementById('user-logs-container');
