@@ -1750,40 +1750,98 @@
             else displayEl.className = 'text-xl font-bold text-gray-500';
         }
 
-        async function confirmTransaction() {
-            const uid = document.getElementById('hidden-uid').value;
-            const product = document.getElementById('trans-product').value;
-            const category = document.getElementById('trans-category').value;
-            const totalAmount = parseInt(document.getElementById('trans-total').value);
-            const earnedPoints = parseInt(document.getElementById('hidden-calc-earned').value) || 0;
-            const deductPoints = parseInt(document.getElementById('trans-deduct').value) || 0;
-            const currentPoints = parseInt(document.getElementById('edit-current-points').innerText) || 0;
-            if(!product) return showCustomAlert('請輸入產品名稱');
-            if(!totalAmount || totalAmount <= 0) return showCustomAlert('請輸入有效金額');
-            
-            // 新增：驗證是否超過金額
-            const POINT_VALUE = 0.5;
-            if (deductPoints * POINT_VALUE > totalAmount) {
-                return showCustomAlert('折抵金額不可超過消費總金額！');
-            }
-            if (deductPoints > currentPoints) {
-                return showCustomAlert('扣抵點數不可超過會員現有點數！');
-            }
+/**
+ * 核心交易邏輯 (Pure Function 概念)
+ * 負責計算最終數值，不涉及 DOM 操作，方便單元測試
+ */
+function calculateTransactionData(inputData, userCurrentPoints, ratesConfig) {
+    const { amount, deductPoints, category, productName } = inputData; // 加入 productName
+    
+    // 1. 強制型別轉換與防呆
+    const safeAmount = Math.max(0, parseInt(amount) || 0);
+    const safeDeduct = Math.max(0, parseInt(deductPoints) || 0);
+    const rate = ratesConfig[category] || 0;
+    const pointValue = 0.5; // 應提取為常數配置
 
-            const finalChange = earnedPoints - deductPoints;
-            let details = `(獲+${earnedPoints}`; if(deductPoints > 0) details += `, 折-${deductPoints}`; details += `)`;
-            const reason = `[${category}類] ${product} $${totalAmount} ${details}`;
-            const btn = document.getElementById('btn-trans');
-            btn.disabled = true; btn.innerText = '處理中...';
-            try {
-                const { error } = await sbClient.from('point_logs').insert([{ user_id: uid, admin_id: currentUser.id, change_amount: finalChange, reason: reason }]);
-                if(error) throw error;
-                showCustomAlert('交易成功！點數變動: ' + finalChange);
-                closeAdminModal();
-                fetchUsers(); 
-            } catch(err) { showCustomAlert('交易失敗：' + err.message); } finally { btn.disabled = false; btn.innerText = '確認交易'; }
-        }
+    // 2. 商業規則驗證 (原本只在 DOM 驗證，這裡做二次防守)
+    if (safeDeduct > userCurrentPoints) {
+        throw new Error('扣抵點數不可超過會員現有點數');
+    }
+    if (safeDeduct * pointValue > safeAmount) {
+        throw new Error('折抵金額不可超過消費總金額');
+    }
 
+    // 3. 重新計算應得點數 (即使前端隱藏欄位被改，這裡也會校正回歸)
+    const realPayAmount = Math.max(0, safeAmount - (safeDeduct * pointValue));
+    const earnedPoints = Math.floor(realPayAmount * rate);
+    const finalChange = earnedPoints - safeDeduct;
+
+    return {
+        safeAmount,
+        earnedPoints,
+        deductPoints: safeDeduct,
+        finalChange,
+        reason: `[${category}類] ${productName} $${safeAmount} (獲+${earnedPoints}, 折-${safeDeduct})`
+    };
+}
+
+/**
+ * UI 交互層 (Controller)
+ * 只負責收集數據、呼叫邏輯、更新畫面
+ */
+async function confirmTransaction() {
+    const uiRefs = {
+        uid: document.getElementById('hidden-uid'),
+        product: document.getElementById('trans-product'),
+        category: document.getElementById('trans-category'),
+        total: document.getElementById('trans-total'),
+        deduct: document.getElementById('trans-deduct'),
+        currentPoints: document.getElementById('edit-current-points'),
+        btn: document.getElementById('btn-trans')
+    };
+
+    // 1. 收集數據 (Data Gathering)
+    const rawInput = {
+        productName: uiRefs.product.value.trim(),
+        category: uiRefs.category.value,
+        amount: uiRefs.total.value,
+        deductPoints: uiRefs.deduct.value
+    };
+    const currentPoints = parseInt(uiRefs.currentPoints.innerText) || 0;
+
+    // 2. 基礎驗證
+    if (!rawInput.productName) return showCustomAlert('請輸入產品名稱');
+    if (!rawInput.amount || rawInput.amount <= 0) return showCustomAlert('請輸入有效金額');
+
+    uiRefs.btn.disabled = true;
+    uiRefs.btn.innerText = '處理中...';
+
+    try {
+        // 3. 呼叫核心邏輯進行計算 (在此處隔離了 DOM 與 邏輯)
+        // 即使 hidden-calc-earned 被篡改，calculateTransactionData 也會根據原始金額重新算出正確點數
+        const transactionData = calculateTransactionData(rawInput, currentPoints, CAT_RATES);
+
+        // 4. API 請求 (API Service)
+        const { error } = await sbClient.from('point_logs').insert([{
+            user_id: uiRefs.uid.value,
+            admin_id: currentUser.id,
+            change_amount: transactionData.finalChange,
+            reason: transactionData.reason
+        }]);
+
+        if (error) throw error;
+
+        showCustomAlert(`交易成功！點數變動: ${transactionData.finalChange > 0 ? '+' : ''}${transactionData.finalChange}`);
+        closeAdminModal();
+        fetchUsers(); 
+
+    } catch (err) {
+        showCustomAlert('交易失敗：' + err.message);
+    } finally {
+        uiRefs.btn.disabled = false;
+        uiRefs.btn.innerText = '確認交易';
+    }
+}
         async function saveProfileChanges() {
             const uid = document.getElementById('hidden-uid').value;
             const { error } = await sbClient.from('profiles').update({ full_name: document.getElementById('edit-name').value, phone: document.getElementById('edit-phone').value }).eq('id', uid);
