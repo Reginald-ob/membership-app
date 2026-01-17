@@ -275,6 +275,11 @@
                             <i class="ph ph-receipt mr-2"></i> 訂單查詢
                         </a>
                     </div>
+                    <div>
+                        <a href="javascript:void(0)" onclick="toggleSidebar('user'); switchUserTab('rentals')" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
+                            <i class="ph ph-tennis-ball mr-2"></i> 場地租借
+                        </a>
+                    </div>
                 </div>
                 <div class="p-6 border-t border-gray-700 flex flex-col gap-4">
                     <div aria-label="User Logout Button" tabindex="0" role="button" class="user-profile" onclick="handleLogout()">
@@ -388,6 +393,22 @@
                         <div class="text-center text-gray-400 text-sm mt-4">載入中...</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="tab-rentals" class="flex-1 overflow-y-auto user-content-area hidden bg-gray-50">
+            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3 border-b">
+                <button class="reward-btn" onclick="toggleSidebar('user')">
+                    <span class="IconContainer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box"><path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle></svg>
+                        <span class="coin"></span>
+                    </span>
+                    <span class="text">MENU</span>
+                </button>
+                <h2 class="text-xl font-bold text-gray-800">我的場地租借</h2>
+            </div>
+            <div class="p-4 space-y-4" id="user-rentals-container">
+                <div class="text-center text-gray-400 mt-10">載入中...</div>
             </div>
         </div>
 
@@ -769,7 +790,7 @@
                         <button onclick="fetchAndShowHistory()" class="admin-grid-btn text-gray-600 hover:text-indigo-600"><i class="ph ph-clock-counter-clockwise"></i><span>點數紀錄</span></button>
                         <button onclick="fetchAdminUserOrders('active')" class="admin-grid-btn text-orange-600 hover:text-orange-800"><i class="ph ph-hourglass-high"></i><span>未處理訂單</span></button>
                         <button onclick="fetchAdminUserOrders('history')" class="admin-grid-btn text-gray-500 hover:text-gray-700"><i class="ph ph-archive"></i><span>歷史訂單</span></button>
-                        <button disabled class="admin-grid-btn"><i class="ph ph-plus"></i><span>預留功能</span></button>
+                        <button onclick="openRentalManagement()" class="admin-grid-btn text-teal-600 hover:text-teal-800 border-teal-200 hover:bg-teal-50"><i class="ph ph-tennis-ball"></i><span>場地租借</span></button>
                         <button disabled class="admin-grid-btn"><i class="ph ph-plus"></i><span>預留功能</span></button>
                     </div>
                     <div id="admin-trans-form" class="hidden animate-fade-in space-y-3">
@@ -812,6 +833,94 @@
 
     <input type="hidden" id="hidden-uid">
     <input type="hidden" id="hidden-display-id">
+
+<div id="admin-rental-modal" class="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-80 hidden backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 h-[85vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-4 bg-teal-600 text-white flex justify-between items-center shrink-0">
+            <h3 class="text-lg font-bold flex items-center gap-2"><i class="ph ph-tennis-ball"></i> 場地租借管理</h3>
+            <button onclick="closeRentalManagement()" class="hover:bg-teal-700 p-1 rounded"><i class="ph ph-x text-lg"></i></button>
+        </div>
+        <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+            <span class="text-xs text-gray-500">雙擊項目可編輯</span>
+            <button onclick="openRentalForm()" class="bg-teal-600 text-white px-4 py-2 rounded shadow hover:bg-teal-700 text-sm font-bold flex items-center gap-1"><i class="ph ph-plus"></i> 新增租借</button>
+        </div>
+        <div class="flex-1 overflow-auto p-4">
+            <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-bold text-gray-500">類型</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold text-gray-500">日期</th>
+                        <th class="px-3 py-2 text-right text-xs font-bold text-gray-500">狀態</th>
+                    </tr>
+                </thead>
+                <tbody id="rental-table-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
+            </table>
+            <div id="rental-loading" class="text-center py-4 text-gray-400 text-xs hidden">載入中...</div>
+            <div id="rental-empty" class="text-center py-10 text-gray-400 text-sm hidden">此用戶尚無租借資料</div>
+        </div>
+    </div>
+</div>
+
+<div id="admin-rental-form-modal" class="fixed inset-0 z-[80] flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden transform transition-all">
+        <div class="bg-gray-800 text-white px-6 py-3 font-bold flex justify-between items-center">
+            <span id="rental-form-title">新增場地</span>
+        </div>
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <input type="hidden" id="rental-id"> <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">租借類型</label>
+                    <select id="rental-type" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500">
+                        <option value="月租">月租</option>
+                        <option value="季租">季租</option>
+                        <option value="比賽">比賽</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">金額</label>
+                    <input type="number" id="rental-amount" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500" placeholder="0">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">租借日期 (手動輸入)</label>
+                <input type="text" id="rental-date" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500" placeholder="例如: 每週二 19:00-21:00">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">付款狀態</label>
+                    <select id="rental-pay-status" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500">
+                        <option value="未付款">未付款</option>
+                        <option value="已付款">已付款</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">租借狀態</label>
+                    <select id="rental-status" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500">
+                        <option value="租借中">租借中</option>
+                        <option value="待續租">待續租</option>
+                        <option value="自動續租">自動續租</option>
+                        <option value="已結束">已結束</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">請假日期</label>
+                <input type="text" id="rental-leave" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500" placeholder="例如: 10/12, 11/05">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">備註</label>
+                <textarea id="rental-remarks" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-teal-500" placeholder="備註事項..."></textarea>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+            <button onclick="deleteRentalData()" id="btn-rental-delete" class="text-red-500 hover:text-red-700 text-sm font-bold hidden">刪除此筆</button>
+            <div class="flex gap-2 ml-auto">
+                <button onclick="closeRentalForm()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">取消</button>
+                <button onclick="saveRentalData()" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm font-bold shadow-sm">儲存</button>
+            </div>
+        </div>
+    </div>
+</div>
     
     <script>
         const SUPABASE_URL = 'https://xnubbczorjzwlpbkjrfo.supabase.co'; 
@@ -1066,10 +1175,11 @@
                 const isActive = btn.dataset.target === target;
                 btn.classList.toggle('active', isActive); btn.classList.toggle('text-indigo-600', isActive); btn.classList.toggle('text-gray-400', !isActive);
             });
-            ['shop', 'profile', 'info', 'orders'].forEach(tab => {
+            ['shop', 'profile', 'info', 'orders', 'rentals'].forEach(tab => {
                 const el = document.getElementById('tab-' + tab);
                 if(el) { if(tab === target) el.classList.remove('hidden'); else el.classList.add('hidden'); }
             });
+            if(target === 'rentals') fetchUserRentals(); //當切換到租借頁面時，讀取資料
             if(target === 'orders') fetchUserOrders();
         }
 
@@ -1850,6 +1960,217 @@
             document.getElementById('rpt-total-deduct').innerText = '0';
             document.getElementById('rpt-total-earned').innerText = '0';
         }
+// --- 新增: 用戶端租借邏輯 ---
+async function fetchUserRentals() {
+    if(!currentUser) return;
+    const container = document.getElementById('user-rentals-container');
+    container.innerHTML = '<div class="text-center text-gray-400 mt-10">載入中...</div>';
+
+    const { data, error } = await sbClient.from('court_rentals')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+    
+    if(error) { container.innerHTML = '<div class="text-center text-red-400 mt-10">載入錯誤</div>'; return; }
+
+    if(!data || data.length === 0) {
+        container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm p-8 text-center flex flex-col items-center justify-center h-64 border border-dashed border-gray-300">
+                <i class="ph ph-tennis-ball text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-bold">你沒有月租/季租的場地</p>
+                <p class="text-gray-400 text-xs mt-1">請向球館人員確認 !</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = data.map(r => {
+        // 樣式設定
+        let statusClass = 'bg-gray-100 text-gray-600';
+        if(r.status === '租借中') statusClass = 'bg-green-100 text-green-800';
+        else if(r.status === '待續租') statusClass = 'bg-yellow-100 text-yellow-800';
+        
+        const payColor = r.payment_status === '已付款' ? 'text-green-600 bg-green-50' : 'text-red-500 bg-red-50';
+
+        return `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+            <div class="absolute top-0 left-0 w-1 h-full ${r.status === '已結束' ? 'bg-gray-300' : 'bg-teal-500'}"></div>
+            <div class="p-4 pl-6">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-gray-800">${r.rental_type}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusClass}">${r.status}</span>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded font-bold ${payColor}">${r.payment_status}</span>
+                </div>
+                <h4 class="text-lg font-bold text-gray-900 mb-3">${r.rental_date}</h4>
+                
+                <div class="space-y-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    <div class="flex justify-between"><span class="text-gray-400">消費金額</span><span class="font-mono font-bold">NT$ ${r.amount}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">請假日期</span><span class="font-bold text-orange-600">${r.leave_dates || '-'}</span></div>
+                </div>
+                
+                ${r.remarks ? `<div class="mt-3 text-xs text-gray-500 border-t pt-2"><span class="font-bold">備註：</span>${r.remarks}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// --- 新增: Admin 租借管理邏輯 ---
+let rentalDataCache = [];
+
+// 1. 打開管理列表
+window.openRentalManagement = async function() {
+    document.getElementById('admin-modal').classList.add('hidden'); // 隱藏上一層
+    document.getElementById('admin-rental-modal').classList.remove('hidden');
+    
+    const uid = document.getElementById('hidden-uid').value;
+    const tbody = document.getElementById('rental-table-body');
+    const loader = document.getElementById('rental-loading');
+    const empty = document.getElementById('rental-empty');
+
+    tbody.innerHTML = '';
+    loader.classList.remove('hidden');
+    empty.classList.add('hidden');
+
+    const { data, error } = await sbClient.from('court_rentals')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false });
+    
+    loader.classList.add('hidden');
+    if(error) return showCustomAlert('讀取失敗');
+    
+    rentalDataCache = data || [];
+
+    if(rentalDataCache.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+    }
+
+    rentalDataCache.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-teal-50 border-b cursor-pointer transition';
+        tr.ondblclick = () => openRentalForm(r.id); // 雙擊修改
+        
+        let statusColor = r.status === '租借中' ? 'text-green-600 font-bold' : 'text-gray-500';
+
+        tr.innerHTML = `
+            <td class="px-3 py-3 text-gray-800 font-bold">${r.rental_type}</td>
+            <td class="px-3 py-3 text-gray-600">${r.rental_date}</td>
+            <td class="px-3 py-3 text-right ${statusColor} text-xs">${r.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.closeRentalManagement = function() {
+    document.getElementById('admin-rental-modal').classList.add('hidden');
+    document.getElementById('admin-modal').classList.remove('hidden'); // 返回上一層
+}
+
+// 2. 打開表單 (新增/編輯)
+window.openRentalForm = function(rentalId = null) {
+    document.getElementById('admin-rental-form-modal').classList.remove('hidden');
+    const title = document.getElementById('rental-form-title');
+    const delBtn = document.getElementById('btn-rental-delete');
+
+    if (rentalId) {
+        // 編輯模式
+        title.innerText = "修改場地資料";
+        delBtn.classList.remove('hidden');
+        const data = rentalDataCache.find(r => r.id === rentalId);
+        
+        document.getElementById('rental-id').value = data.id;
+        document.getElementById('rental-type').value = data.rental_type;
+        document.getElementById('rental-amount').value = data.amount;
+        document.getElementById('rental-date').value = data.rental_date;
+        document.getElementById('rental-pay-status').value = data.payment_status;
+        document.getElementById('rental-status').value = data.status;
+        document.getElementById('rental-leave').value = data.leave_dates || '';
+        document.getElementById('rental-remarks').value = data.remarks || '';
+    } else {
+        // 新增模式
+        title.innerText = "新增場地租借";
+        delBtn.classList.add('hidden');
+        document.getElementById('rental-id').value = '';
+        document.getElementById('rental-type').value = '月租';
+        document.getElementById('rental-amount').value = '';
+        document.getElementById('rental-date').value = '';
+        document.getElementById('rental-pay-status').value = '未付款';
+        document.getElementById('rental-status').value = '租借中';
+        document.getElementById('rental-leave').value = '';
+        document.getElementById('rental-remarks').value = '';
+    }
+}
+
+// 3. 關閉表單 (防呆)
+window.closeRentalForm = function() {
+    if(confirm("確定要取消編輯嗎？未儲存的資料將會遺失。")) {
+        document.getElementById('admin-rental-form-modal').classList.add('hidden');
+    }
+}
+
+// 4. 儲存資料 (防呆)
+window.saveRentalData = async function() {
+    // 必填檢查
+    const type = document.getElementById('rental-type').value;
+    const date = document.getElementById('rental-date').value;
+    const amount = document.getElementById('rental-amount').value;
+    
+    if(!type || !date || !amount) {
+        alert("請填寫完整資訊：類型、金額與日期為必填項目！");
+        return;
+    }
+
+    if(!confirm("確定要儲存這筆資料嗎？")) return;
+
+    const rid = document.getElementById('rental-id').value;
+    const uid = document.getElementById('hidden-uid').value;
+    
+    const payload = {
+        user_id: uid,
+        rental_type: type,
+        rental_date: date,
+        amount: parseInt(amount),
+        payment_status: document.getElementById('rental-pay-status').value,
+        status: document.getElementById('rental-status').value,
+        leave_dates: document.getElementById('rental-leave').value,
+        remarks: document.getElementById('rental-remarks').value
+    };
+
+    let error;
+    if (rid) {
+        const res = await sbClient.from('court_rentals').update(payload).eq('id', rid);
+        error = res.error;
+    } else {
+        const res = await sbClient.from('court_rentals').insert([payload]);
+        error = res.error;
+    }
+
+    if(error) {
+        showCustomAlert("儲存失敗: " + error.message);
+    } else {
+        document.getElementById('admin-rental-form-modal').classList.add('hidden');
+        showCustomAlert("資料已儲存！");
+        openRentalManagement(); // 重新整理列表
+    }
+}
+
+// 5. 刪除資料
+window.deleteRentalData = async function() {
+    if(!confirm("⚠️ 警告：確定要刪除這筆租借資料嗎？此動作無法復原！")) return;
+    
+    const rid = document.getElementById('rental-id').value;
+    const { error } = await sbClient.from('court_rentals').delete().eq('id', rid);
+
+    if(error) {
+        showCustomAlert("刪除失敗");
+    } else {
+        document.getElementById('admin-rental-form-modal').classList.add('hidden');
+        showCustomAlert("資料已刪除");
+        openRentalManagement();
+    }
+}
     </script>
 </body>
 </html>
