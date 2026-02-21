@@ -159,9 +159,10 @@
             z-index: 0; /* 確保網格背景在最底層 */
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
 
+<body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
     <div id="config-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex items-center justify-center">
         <div class="bg-white p-8 rounded shadow-lg max-w-md text-center">
             <h2 class="text-xl font-bold mb-4 text-red-600">系統尚未設定</h2>
@@ -964,15 +965,50 @@
             'cancelled': { label: '已取消', class: 'bg-gray-100 text-gray-500' }
         };
 
-        //更新產品資料，新增 category 欄位
-        const PRODUCTS = [
-            { id: 1, title: "突擊 TK-DBF M", category: "羽球拍", price: 1880, img: "https://i.ibb.co/FbbXBcm0/TK-DBF-M.png", desc: "原價:$2880\n軟彈中管搭配箱形拍框,帶來扎實的進攻手感,推薦給喜愛進攻的球友，同時具有網前球對抗的速度。\n穿線磅數≦29lbs / ≦28lbs | 中管軟硬度 S-○○○○●-F", options: ["4U", "5U"] },
-            { id: 2, title: "透氣運動衫", category: "男裝上身", price: 890, img: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&auto=format&fit=crop&q=60", desc: "吸濕排汗，保持乾爽。", options: ["S", "M", "L", "XL"] },
-            { id: 3, title: "專業羽球鞋 V2", category: "球鞋", price: 3200, img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60", desc: "防滑大底，提供最佳抓地力。", options: ["US 8", "US 9", "US 10"] },
-            { id: 4, title: "握把布 (3入)", category: "握把布", price: 150, img: "https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=500&auto=format&fit=crop&q=60", desc: "舒適手感，止滑耐用。", options: ["黑色", "白色", "螢光黃"] },
-            { id: 5, title: "冠軍羽毛球 (一打)", category: "羽毛球", price: 650, img: "https://images.unsplash.com/photo-1625619623696-6e771cc43063?w=500&auto=format&fit=crop&q=60", desc: "比賽級專用球，飛行穩定。", options: ["76速", "77速"] },
-            { id: 6, title: "運動護腕", category: "安全防護", price: 200, img: "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=500&auto=format&fit=crop&q=60", desc: "保護手腕，減少運動傷害。", options: ["單一尺寸"] }
-        ];
+        // --- Google Sheets API 設定 ---
+        const API_KEY = 'AIzaSyBe2w1BKq_h3m18CRNQ5XdaDRRTTNbzlJQ'; 
+        const SHEET_ID = '1Uo9OxUvmBvbJZnsCJvE4fa7P_5HdobAtsqX74JiSvFk'; 
+        // 確保這裡的名稱與您試算表左下角的頁籤名稱完全一致 (例如: 工作表1 或是 Sheet1)
+        const RANGE = '工作表1!A:G'; 
+
+        let PRODUCTS = [];
+
+        // 透過 Google Sheets API 抓取資料
+        async function fetchProductsFromGoogleSheet() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            const rows = data.values;
+            
+            if (!rows || rows.length <= 1) {
+                return []; // 沒有資料或只有表頭
+            }
+
+            const formattedData = [];
+            // 從 i = 1 開始迴圈，跳過第 0 列的表頭 (id, title, category...)
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row[0]) continue; // 如果 ID 是空的就跳過
+
+                formattedData.push({
+                    id: parseInt(row[0]),             // A欄: id
+                    title: row[1] || '',              // B欄: title
+                    category: row[2] || '全部商品',     // C欄: category
+                    price: parseInt(row[3]) || 0,     // D欄: price
+                    img: row[4] || '',                // E欄: img
+                    desc: row[5] || '',               // F欄: desc
+                    // G欄: options (將字串切成陣列)
+                    options: row[6] ? String(row[6]).split(',').map(s => s.trim()) : ["單一規格"]
+                });
+            }
+            
+            return formattedData;
+        }
 
         //定義產品分類列表
         const CATEGORIES = ["全部商品", "羽球拍", "羽毛球", "握把布", "背包球袋", "球鞋", "襪子", "鞋墊", "女裝上身", "女裝下身", "男裝上身", "男裝下身", "安全防護", "限定款"];
@@ -1017,7 +1053,7 @@
             initApp();
         }
 
-        function initApp() {
+        async function initApp() {
             sbClient.auth.onAuthStateChange((event, session) => {
                 if (session) {
                     currentUser = session.user;
@@ -1027,9 +1063,21 @@
                     switchView('auth');
                 }
             });
-            initCategoryMenu(); // 初始化分類選單
-            renderShop();       // 初始渲染
-            setupEventListeners();
+
+            try {
+                // [新增] 等待 Google Sheets 商品資料載入完成
+                PRODUCTS = await fetchProductsFromGoogleSheet();
+                
+                initCategoryMenu(); // 初始化分類選單
+                renderShop();       // 初始渲染
+                setupEventListeners();
+            } catch (error) {
+                console.error("載入商品失敗:", error);
+                const container = document.getElementById('shop-container');
+                if (container) {
+                    container.innerHTML = '<div class="col-span-full text-center text-red-500 py-10 font-bold">無法載入商品目錄，請確認 Google Sheets 網址是否正確或已發布。</div>';
+                }
+            }
         }
 
         // 初始化分類選單
