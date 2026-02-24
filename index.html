@@ -125,40 +125,39 @@
         .stepper-line { position: absolute; top: 15px; left: calc(-50% + 15px); right: calc(50% + 15px); height: 2px; background-color: #e5e7eb; z-index: 0; transition: all 0.3s; }
         .stepper-item.active .stepper-line { background-color: #8b5cf6; }
 
-        /*新增：自定義登入背景樣式*/
+        /* --- 更新：登入頁面背景與動畫設計 --- */
         .login-bg-custom {
             width: 100%;
             height: 100%;
-            background: linear-gradient(
-                to bottom,
-                #fff 0%,
-                #fff 40%,
-                rgba(255, 255, 255, 0) 100%
-            ),
-            linear-gradient(to right, #0ed2da, #5f29c7);
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        
+        .login-graphic-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
             position: relative;
+            overflow: hidden;
         }
 
-        .login-bg-custom::before {
+        /* 網格裝飾 */
+        .login-graphic-bg::before {
             content: "";
             position: absolute;
             inset: 0;
-            background-image: linear-gradient(90deg, #ccc 1px, transparent 1px);
-            background-size: 50px 100%;
-            pointer-events: none;
-            mask-image: linear-gradient(
-                to bottom,
-                rgba(0, 0, 0, 1) 0%,
-                rgba(0, 0, 0, 0) 70%
-            );
-            -webkit-mask-image: linear-gradient(
-                to bottom,
-                rgba(0, 0, 0, 1) 0%,
-                rgba(0, 0, 0, 0) 70%
-            );
-            z-index: 0; /* 確保網格背景在最底層 */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.5;
         }
-    </style>
+
+        /* 浮動羽球裝飾動畫 */
+        @keyframes float-shuttle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        .animate-float {
+            animation: float-shuttle 6s ease-in-out infinite;
+        }    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 
@@ -170,47 +169,109 @@
         </div>
     </div>
 
-    <div id="auth-view" class="h-full flex items-center justify-center p-4 overflow-y-auto login-bg-custom">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm relative my-auto">
-            <h1 id="auth-title" class="text-2xl font-bold text-center mb-6 text-gray-800">會員登入</h1>
-            <div id="auth-message" class="mb-4 text-sm text-center hidden p-2 rounded"></div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase">電子信箱</label>
-                    <input type="email" id="email" class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div id="password-group">
-                    <label class="block text-xs font-bold text-gray-500 uppercase">密碼</label>
-                    <input type="password" id="password" class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div id="register-fields" class="hidden space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase">真實姓名</label>
-                        <input type="text" id="full_name" class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
+<div id="auth-view" class="h-full w-full flex flex-col md:flex-row items-center justify-center bg-gray-50 md:p-8 overflow-y-auto no-scrollbar">
+        
+        <div class="bg-white w-full max-w-4xl md:rounded-2xl shadow-none md:shadow-2xl flex flex-col md:flex-row relative z-10 min-h-screen md:min-h-[500px]">
+            
+            <div class="login-graphic-bg w-full md:w-5/12 px-6 pt-10 pb-12 md:p-12 text-white flex flex-col justify-center relative shrink-0 rounded-b-[2.5rem] md:rounded-none shadow-lg md:shadow-none z-0">
+                
+                <div class="flex items-center gap-2 relative z-10 mb-4 md:mb-8">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-indigo-600 shadow-lg">
+                        <i class="ph-fill ph-tennis-ball text-xl md:text-2xl"></i>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase">電話號碼</label>
-                        <input type="tel" id="phone" class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
-                    </div>
+                    <span class="font-bold tracking-widest text-base md:text-lg opacity-90">CHAMPION</span>
                 </div>
-                <div id="forgot-fields" class="hidden space-y-4">
-                    <div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 mb-2 border border-yellow-200">請輸入助記詞以重設密碼。</div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase">助記詞</label>
-                        <input type="text" id="recovery-mnemonic" placeholder="apple banana ..." class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase">新密碼</label>
-                        <input type="password" id="new-password" class="mt-1 block w-full rounded border-gray-300 bg-gray-50 border px-3 py-2 outline-none">
+                
+                <div class="relative z-10 flex-1 flex flex-col justify-center">
+                    <h2 class="text-2xl md:text-4xl font-bold mb-3 md:mb-4 leading-tight tracking-wide">
+                        冠軍永安羽球館
+                    </h2>
+                    <p class="text-indigo-100 text-xs md:text-sm leading-relaxed mb-1 md:mb-6">
+                        查預約、添購裝備，邊打球邊賺回饋！<br>
+                    </p>
+                    <div class="mt-2 md:mt-0">
+                        <span class="bg-white/20 backdrop-blur-sm px-3 py-1.5 md:py-2 rounded-lg font-bold text-white text-[15px] md:text-xs inline-block leading-relaxed border border-white/10 shadow-sm">
+                            缺球缺裝備不用慌~<br>享受<strong>『線上先挑好，來打球順便拿』</strong>的專屬服務，我們就是你的<strong>羽球便利店</strong>！
+                        </span>
                     </div>
                 </div>
-                <button id="btn-submit" class="w-full py-3 px-4 rounded shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">登入</button>
-                <div class="flex justify-between text-xs mt-4 text-gray-500">
-                    <a href="#" id="link-forgot" class="hover:text-indigo-600">忘記密碼？</a>
-                    <a href="#" id="link-toggle-mode" class="hover:text-indigo-600 ml-auto">註冊新會員</a>
+
+                <div class="absolute right-4 bottom-8 md:relative md:right-auto md:bottom-auto md:mt-8 text-white opacity-10 md:opacity-20 animate-float w-20 h-20 md:w-32 md:h-32 pointer-events-none z-0">
+                    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12,2C11.5,2 11,2.2 10.6,2.6C10.2,3 10,3.5 10,4V4.5C7.2,5.2 5,7.6 5,10.5C5,11.3 5.2,12.1 5.5,12.8L10.3,21.6C10.6,22.2 11.3,22.5 12,22.5C12.7,22.5 13.4,22.2 13.7,21.6L18.5,12.8C18.8,12.1 19,11.3 19,10.5C19,7.6 16.8,5.2 14,4.5V4C14,3.5 13.8,3 13.4,2.6C13,2.2 12.5,2 12,2M12,4C12.3,4 12.5,4.2 12.5,4.5V4.8C12.3,4.7 12.2,4.7 12,4.7C11.8,4.7 11.7,4.7 11.5,4.8V4.5C11.5,4.2 11.7,4 12,4M12,6.7C14.1,6.7 16,8.4 16,10.5C16,11.1 15.9,11.6 15.6,12L12,18.7L8.4,12C8.1,11.6 8,11.1 8,10.5C8,8.4 9.9,6.7 12,6.7M12,8.5C10.9,8.5 10,9.4 10,10.5C10,11.6 10.9,12.5 12,12.5C13.1,12.5 14,11.6 14,10.5C14,9.4 13.1,8.5 12,8.5Z"/>
+                    </svg>
                 </div>
-                <div id="link-back-login-container" class="hidden text-center mt-4">
-                    <a href="#" id="link-back-login" class="text-xs text-indigo-600 font-bold">返回登入</a>
+            </div>
+
+            <div class="w-full md:w-7/12 px-6 py-8 md:p-12 flex flex-col justify-center flex-1 bg-white relative z-10 -mt-8 md:mt-0 rounded-t-3xl md:rounded-none">
+                <div class="max-w-sm w-full mx-auto">
+                    <div class="mb-6 md:mb-8 text-center md:text-left">
+                        <h1 id="auth-title" class="text-2xl font-bold text-gray-800 mb-1.5">會員登入</h1>
+                        <p class="text-xs md:text-sm text-gray-500">歡迎回來！請輸入您的資料以繼續。</p>
+                    </div>
+                    
+                    <div id="auth-message" class="mb-5 text-sm text-center hidden p-3 rounded font-medium"></div>
+                    
+                    <div class="space-y-4 md:space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">電子信箱</label>
+                            <div class="relative">
+                                <i class="ph ph-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                                <input type="email" id="email" placeholder="name@example.com" class="block w-full rounded-lg border-gray-200 bg-gray-50 border pl-10 pr-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                            </div>
+                        </div>
+                        
+                        <div id="password-group">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">密碼</label>
+                            <div class="relative">
+                                <i class="ph ph-lock-key absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                                <input type="password" id="password" placeholder="••••••••" class="block w-full rounded-lg border-gray-200 bg-gray-50 border pl-10 pr-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                            </div>
+                        </div>
+
+                        <div id="register-fields" class="hidden space-y-4 md:space-y-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">真實姓名</label>
+                                <div class="relative">
+                                    <i class="ph ph-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                                    <input type="text" id="full_name" placeholder="王大明" class="block w-full rounded-lg border-gray-200 bg-gray-50 border pl-10 pr-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">電話號碼</label>
+                                <div class="relative">
+                                    <i class="ph ph-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                                    <input type="tel" id="phone" placeholder="0912345678" class="block w-full rounded-lg border-gray-200 bg-gray-50 border pl-10 pr-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="forgot-fields" class="hidden space-y-4 md:space-y-5">
+                            <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 border border-yellow-200 flex items-start gap-2">
+                                <i class="ph ph-info text-lg shrink-0"></i>
+                                <span>請輸入註冊時系統配發的 12 組英文單字助記詞以重設密碼。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">助記詞</label>
+                                <input type="text" id="recovery-mnemonic" placeholder="apple banana cat ..." class="block w-full rounded-lg border-gray-200 bg-gray-50 border px-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">新密碼</label>
+                                <input type="password" id="new-password" placeholder="請輸入新密碼" class="block w-full rounded-lg border-gray-200 bg-gray-50 border px-3 py-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                            </div>
+                        </div>
+
+                        <button id="btn-submit" class="w-full py-3.5 px-4 rounded-lg shadow-md shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all mt-6">登入</button>
+                        
+                        <div class="flex justify-between items-center text-xs mt-6 text-gray-500 border-t border-gray-100 pt-5">
+                            <a href="javascript:void(0)" id="link-forgot" class="hover:text-indigo-600 font-medium transition-colors">忘記密碼？</a>
+                            <a href="javascript:void(0)" id="link-toggle-mode" class="hover:text-indigo-600 font-medium transition-colors flex items-center gap-1">註冊新會員 <i class="ph ph-arrow-right"></i></a>
+                        </div>
+                        
+                        <div id="link-back-login-container" class="hidden text-center mt-6 border-t border-gray-100 pt-5">
+                            <a href="javascript:void(0)" id="link-back-login" class="text-sm text-indigo-600 font-bold hover:text-indigo-800 transition-colors flex items-center justify-center gap-2"><i class="ph ph-arrow-left"></i> 返回登入</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1064,13 +1125,16 @@
                 }
             });
 
+            // 【關鍵修復】：將綁定按鈕事件移到最前面！
+            // 這樣就算商品載入失敗，用戶依然可以正常登入/註冊
+            setupEventListeners();
+
             try {
-                // [新增] 等待 Google Sheets 商品資料載入完成
+                // 等待 Google Sheets 商品資料載入完成
                 PRODUCTS = await fetchProductsFromGoogleSheet();
                 
                 initCategoryMenu(); // 初始化分類選單
                 renderShop();       // 初始渲染
-                setupEventListeners();
             } catch (error) {
                 console.error("載入商品失敗:", error);
                 const container = document.getElementById('shop-container');
@@ -1079,7 +1143,6 @@
                 }
             }
         }
-
         // 初始化分類選單
         function initCategoryMenu() {
             const container = document.getElementById('category-list-container');
