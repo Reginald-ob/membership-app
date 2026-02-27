@@ -887,8 +887,11 @@
                         </div>
                         <div class="bg-red-50 p-3 rounded border border-red-100 mt-2"><div class="flex justify-between items-center mb-1"><label class="block text-xs text-red-700 font-bold"><i class="ph ph-ticket"></i> 本次折抵點數</label><span class="text-[10px] text-red-500" id="deduct-warning"></span></div><input type="number" id="trans-deduct" placeholder="0" min="0" class="w-full border border-red-200 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-red-500 bg-white text-red-700 font-bold" oninput="calculatePoints()"></div>
                         <div class="bg-indigo-50 border border-indigo-200 rounded p-3 flex justify-between items-center"><span class="text-xs text-indigo-800 font-bold">點數變動</span><span id="trans-final-change" class="text-xl font-bold text-indigo-700">0</span></div>
-                        <input type="hidden" id="hidden-calc-earned" value="0">
-                        <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md mt-2">確認交易</button>
+                        <div class="text-right mt-1.5 pr-1">
+                            <span class="text-xs font-bold text-red-500">現場應收現金：</span>
+                            <span id="trans-actual-pay" class="text-sm font-bold text-red-600 font-mono">NT$ 0</span>
+                        </div>
+                        <input type="hidden" id="hidden-calc-earned" value="0">                        <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md mt-2">確認交易</button>
                     </div>
                     <div id="admin-history-view" class="hidden animate-fade-in h-full flex flex-col">
                         <div class="flex items-center justify-between mb-3"><h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-clock-counter-clockwise text-indigo-600"></i> 歷史消費紀錄</h4><button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button></div>
@@ -1787,8 +1790,21 @@
         }
 
         function showActionMenu() { document.getElementById('admin-action-menu').classList.remove('hidden'); document.getElementById('admin-trans-form').classList.add('hidden'); document.getElementById('admin-history-view').classList.add('hidden'); document.getElementById('admin-order-list-view').classList.add('hidden'); }
-        function showTransForm() { document.getElementById('admin-action-menu').classList.add('hidden'); document.getElementById('admin-trans-form').classList.remove('hidden'); document.getElementById('trans-product').value = ''; document.getElementById('trans-total').value = ''; document.getElementById('trans-category').value = 'A'; document.getElementById('trans-deduct').value = ''; document.getElementById('deduct-warning').innerText = ''; document.getElementById('trans-final-change').innerText = '0'; }
-        
+        function showTransForm() { 
+            document.getElementById('admin-action-menu').classList.add('hidden'); 
+            document.getElementById('admin-trans-form').classList.remove('hidden'); 
+            document.getElementById('trans-product').value = ''; 
+            document.getElementById('trans-total').value = ''; 
+            document.getElementById('trans-category').value = 'A'; 
+            document.getElementById('trans-deduct').value = ''; 
+            document.getElementById('deduct-warning').innerText = ''; 
+            document.getElementById('trans-final-change').innerText = '0'; 
+            
+            // [新增] 歸零現場應收現金顯示
+            const actualPayDisplay = document.getElementById('trans-actual-pay');
+            if (actualPayDisplay) actualPayDisplay.innerText = 'NT$ 0';
+        }    
+            
         async function fetchAndShowHistory() {
             document.getElementById('admin-action-menu').classList.add('hidden');
             const historyView = document.getElementById('admin-history-view');
@@ -1961,10 +1977,11 @@
             const deductPoints = parseInt(deductInput.value) || 0;
             const currentPoints = parseInt(document.getElementById('edit-current-points').innerText) || 0;
             const warningSpan = document.getElementById('deduct-warning');
+            const actualPayDisplay = document.getElementById('trans-actual-pay'); // [新增] 取得顯示元素
             
-            // 匯率定義：1點 = 0.5元 (根據你的 User Tab 說明)
+            // 匯率定義：1點 = 0.5元
             const POINT_VALUE = 0.5;
-            const maxDeductiblePointsByPrice = amount / POINT_VALUE; // 例如消費 100元，最多折抵 200點
+            const maxDeductiblePointsByPrice = amount / POINT_VALUE;
 
             // 驗證邏輯
             let warningMsg = '';
@@ -1976,11 +1993,15 @@
             } else if (deductPoints > maxDeductiblePointsByPrice) {
                 warningMsg = `(超過金額上限: ${maxDeductiblePointsByPrice})`;
                 isError = true;
+            } else if (deductPoints % 2 !== 0) { 
+                // [新增] 防呆：限制折抵點數必須是偶數，避免結帳出現小數點
+                warningMsg = `(折抵點數必須為偶數)`;
+                isError = true;
             }
 
             // 處理實際計算金額 (不可小於0)
             const deductValue = deductPoints * POINT_VALUE;
-            const realPayAmount = Math.max(0, amount - (deductPoints * POINT_VALUE));
+            const realPayAmount = Math.max(0, amount - deductValue);
             const earnedPoints = Math.floor(realPayAmount * rate);
 
             document.getElementById('hidden-calc-earned').value = earnedPoints;
@@ -1994,6 +2015,9 @@
                 deductInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
             }
 
+            // [新增] 更新現場應收金額顯示
+            actualPayDisplay.innerText = `NT$ ${realPayAmount}`;
+
             const finalChange = earnedPoints - deductPoints;
             const displayEl = document.getElementById('trans-final-change');
             displayEl.innerText = finalChange > 0 ? `+${finalChange}` : finalChange;
@@ -2002,7 +2026,6 @@
             else if(finalChange < 0) displayEl.className = 'text-xl font-bold text-red-600';
             else displayEl.className = 'text-xl font-bold text-gray-500';
         }
-
 /**
  * 核心交易邏輯 (Pure Function 概念)
  * 負責計算最終數值，不涉及 DOM 操作，方便單元測試
@@ -2022,6 +2045,11 @@ function calculateTransactionData(inputData, userCurrentPoints, ratesConfig) {
     }
     if (safeDeduct * pointValue > safeAmount) {
         throw new Error('折抵金額不可超過消費總金額');
+    }
+
+    //送出時的強制防呆
+    if (safeDeduct % 2 !== 0) { 
+        throw new Error('折抵點數必須為偶數，避免產生小數點結帳金額');
     }
 
     // 3. 重新計算應得點數 (即使前端隱藏欄位被改，這裡也會校正回歸)
