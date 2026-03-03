@@ -561,11 +561,11 @@
                         <h3 class="font-bold text-gray-900 text-lg">1. 點數回饋機制</h3>
                         <p>我們根據不同的消費類別提供不同的回饋比例：</p>
                         <ul class="list-disc pl-5 mt-2 space-y-1">
-                            <li><span class="font-bold text-indigo-600">臨租場地 (不包含賽事包場)</span>：回饋消費實付金額的2%</li>
-                            <li><span class="font-bold text-indigo-600">月季租場地 (不包含賽事包場)</span>：回饋消費實付金額的1%</li>
-                            <li><span class="font-bold text-indigo-600">專業裝備 (僅限球拍.羽球包袋.球鞋.鞋墊.衣褲.護具)</span>：回饋消費實付金額的2%</li>
+                            <li><span class="font-bold text-indigo-600">臨租場地 (不包含賽事包場)</span>：回饋消費實付金額的1%</li>
+                            <li><span class="font-bold text-indigo-600">月季租場地 (不包含賽事包場)</span>：回饋消費實付金額的2%</li>
+                            <li><span class="font-bold text-indigo-600">專業裝備 (限球拍.羽球包袋.球鞋.鞋墊.衣褲.護具)</span>：回饋消費實付金額的3%</li>
                             <li><span class="font-bold text-indigo-600">羽毛球/球拍穿線 (球線費及工本費)</span>：回饋消費實付金額的0%</li>
-                            <li><span class="font-bold text-indigo-600">消耗品 (僅限握把布)</span>：回饋消費實付金額的1%</li>
+                            <li><span class="font-bold text-indigo-600">消耗品 (限握把布，飲料不計在內)</span>：回饋消費實付金額的2%</li>
                         </ul>
                     </div>
                     <hr class="border-gray-200">
@@ -579,7 +579,7 @@
                             <div class="notititle">點數概況</div>
                             <div class="notibody">
                                 <div class="space-y-2 mt-1">
-                                    <div class="stat-row"><span class="stat-label">點數總供給量 (Total supply)</span><span class="stat-value" id="stat-max-supply">500,000</span></div>
+                                    <div class="stat-row"><span class="stat-label">點數總供給量 (Total supply)</span><span class="stat-value" id="stat-max-supply">100,000</span></div>
                                     <div class="stat-row"><span class="stat-label">點數上限 (Max. supply)</span><span class="stat-value" id="stat-max-supply">∞</span></div>
                                     <div class="stat-row"><span class="stat-label">流通供給量 (Circulating supply)</span><span class="stat-value" id="stat-circulating">計算中...</span></div>
                                     <div class="w-full bg-gray-700 rounded-full h-1.5 mt-2"><div id="stat-progress-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
@@ -1014,8 +1014,8 @@
         const SUPABASE_URL = 'https://xnubbczorjzwlpbkjrfo.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudWJiY3pvcmp6d2xwYmtqcmZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5Mjg3MDEsImV4cCI6MjA4MDUwNDcwMX0.pqkraWF9WWHrKxInUHa3CaUWNt1twMZXkFyvxPIyVvs';
         const BIP39_URL = 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt';
-        const MAX_SUPPLY = 500000;
-        const CAT_RATES = { 'A': 0.02, 'B': 0.01, 'C': 0.02, 'D': 0.00, 'E': 0.01 };
+        const MAX_SUPPLY = 100000; // 假設的最大供應量，用於計算稀有度等級
+        const CAT_RATES = { 'A': 0.01, 'B': 0.02, 'C': 0.03, 'D': 0.00, 'E': 0.02 };
         
         // Status Definitions for consistency
         const STATUS_DEFINITIONS = {
