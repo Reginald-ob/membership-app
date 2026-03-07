@@ -1318,29 +1318,27 @@
         }
 
         async function updateCirculationStats() {
-                    // [修正] 改為從 point_logs 獲取所有「正向增加」的紀錄 (即總鑄造量)
-                    // .gt('change_amount', 0) 確保只計算發出去的點數，不扣除已消耗的
-                    const { data, error } = await sbClient
-                        .from('point_logs')
-                        .select('change_amount')
-                        .gt('change_amount', 0);
+            // 1. 改為呼叫後端的 RPC 函數來取得「全域總發行量」
+            const { data: totalMinted, error } = await sbClient.rpc('get_global_minted_points');
 
-                    let total = 0;
-                    
-                    if (!error && data) {
-                        // 加總所有正向變動的金額
-                        total = data.reduce((acc, c) => acc + (c.change_amount || 0), 0);
-                    }
+            let total = 0;
+            if (!error && totalMinted !== null) {
+                total = totalMinted;
+            }
 
-                    // 更新 UI 顯示
-                    document.getElementById('stat-circulating').innerText = total.toLocaleString();
-                    
-                    // 計算百分比 (分母為 MAX_SUPPLY)
-                    const pct = Math.min(100, (total / MAX_SUPPLY) * 100).toFixed(1);
-                    document.getElementById('stat-progress-bar').style.width = pct + '%';
-                    document.getElementById('stat-percentage-text').innerText = pct + '% 已鑄造';
-                }
-
+            // 2. 動態更新畫面上的數字 (包含最大供給量)
+            // 注意：確保 HTML 中原本寫死 500,000 的 span id 是 stat-max-supply
+            const maxSupplyEl = document.getElementById('stat-max-supply');
+            if (maxSupplyEl) maxSupplyEl.innerText = MAX_SUPPLY.toLocaleString();
+            
+            document.getElementById('stat-circulating').innerText = total.toLocaleString();
+            
+            // 3. 計算百分比並更新進度條
+            const pct = Math.min(100, (total / MAX_SUPPLY) * 100).toFixed(1);
+            document.getElementById('stat-progress-bar').style.width = pct + '%';
+            document.getElementById('stat-percentage-text').innerText = pct + '% 歷史總鑄造量 (Total Minted)';
+        }
+        
         async function fetchUserLogs(uid) {
             const container = document.getElementById('user-logs-container');
             container.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">載入中...</div>';
