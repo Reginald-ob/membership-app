@@ -1318,26 +1318,25 @@
         }
 
         async function updateCirculationStats() {
-            // 1. 改為呼叫後端的 RPC 函數來取得「全域總發行量」
-            const { data: totalMinted, error } = await sbClient.rpc('get_global_minted_points');
+            // 呼叫後端 RPC 函數取得「真實歷史總鑄造量」
+            const { data: totalMinted, error } = await sbClient.rpc('get_true_total_minted');
 
             let total = 0;
             if (!error && totalMinted !== null) {
                 total = totalMinted;
             }
 
-            // 2. 動態更新畫面上的數字 (包含最大供給量)
-            // 注意：確保 HTML 中原本寫死 500,000 的 span id 是 stat-max-supply
+            // 動態更新畫面上的數字與最大供給量
             const maxSupplyEl = document.getElementById('stat-max-supply');
             if (maxSupplyEl) maxSupplyEl.innerText = MAX_SUPPLY.toLocaleString();
             
             document.getElementById('stat-circulating').innerText = total.toLocaleString();
             
-            // 3. 計算百分比並更新進度條
+            // 計算百分比並更新進度條
             const pct = Math.min(100, (total / MAX_SUPPLY) * 100).toFixed(1);
             document.getElementById('stat-progress-bar').style.width = pct + '%';
             document.getElementById('stat-percentage-text').innerText = pct + '% 歷史總鑄造量 (Total Minted)';
-        }
+        }        
         
         async function fetchUserLogs(uid) {
             const container = document.getElementById('user-logs-container');
