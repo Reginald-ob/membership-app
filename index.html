@@ -1163,13 +1163,15 @@
             sbClient.auth.onAuthStateChange((event, session) => {
                 if (session) {
                     currentUser = session.user;
-                    loadProfile(currentUser.id);
+                    // [新增防呆判斷]：如果是在註冊模式，暫停自動載入 Profile，避免搶拍導致的強制登出
+                    if (authMode !== 'register') {
+                        loadProfile(currentUser.id);
+                    }
                 } else {
                     currentUser = null;
                     switchView('auth');
                 }
             });
-
             // 【關鍵修復】：將綁定按鈕事件移到最前面！
             // 這樣就算商品載入失敗，用戶依然可以正常登入/註冊
             setupEventListeners();
