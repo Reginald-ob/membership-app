@@ -162,6 +162,10 @@
 </head>
 
 <body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
+    <div id="page-loader" class="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-gray-50 hidden backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-4 shadow-lg"></div>
+        <p class="text-indigo-800 font-bold tracking-widest animate-pulse">系統設定中，請稍候...</p>
+    </div>
     <div id="config-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex items-center justify-center">
         <div class="bg-white p-8 rounded shadow-lg max-w-md text-center">
             <h2 class="text-xl font-bold mb-4 text-red-600">歡迎光臨永安</h2>
@@ -845,9 +849,21 @@
                                 <td class="px-4 py-3 text-right text-indigo-700 text-lg" id="rpt-total-cash">NT$ 0</td>
                             </tr>
                             <tr class="text-xs text-gray-500">
-                                <td colspan="4" class="px-4 py-2 text-right bg-gray-100">
-                                    總折抵點數: <span id="rpt-total-deduct" class="text-red-500 mr-3">0</span>
-                                    總發送點數: <span id="rpt-total-earned" class="text-green-600">0</span>
+                                <td colspan="4" class="px-4 py-2 bg-gray-100">
+                                    <div class="flex items-center justify-end gap-1">
+                                        
+                                        <div class="group relative flex items-center cursor-help mr-1">
+                                            <i class="ph-fill ph-warning-circle text-gray-400 group-hover:text-indigo-500 text-sm transition-colors"></i>
+                                            
+                                            <div class="absolute bottom-full right-0 mb-2 w-48 p-2.5 bg-gray-800 text-white text-[14px] rounded-lg shadow-lg z-50 text-left tracking-wider leading-relaxed pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0">
+                                                此處僅統計「當日總營業額」，不包含櫃台預留$4000現金、支出扣款。
+                                                <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-gray-800"></div>
+                                            </div>
+                                        </div>
+
+                                        總折抵點數: <span id="rpt-total-deduct" class="text-red-500 mr-3">0</span>
+                                        總發送點數: <span id="rpt-total-earned" class="text-green-600">0</span>
+                                    </div>
                                 </td>
                             </tr>
                         </tfoot>
@@ -1109,6 +1125,32 @@
         //判斷是否所有活躍訂單都已付款的旗標
         let isAllOrdersSettled = false;
 
+        // 監聽重整並顯示 Loader
+        // ==========================================
+        document.addEventListener("DOMContentLoaded", () => {
+            if (sessionStorage.getItem('postRegisterLoad') === 'true') {
+                // 清除標記，避免下次重整又跑出來
+                sessionStorage.removeItem('postRegisterLoad');
+                
+                const loader = document.getElementById('page-loader');
+                if (loader) loader.classList.remove('hidden');
+                
+                // 確保退回預設的登入模式
+                if (typeof setAuthMode === 'function') {
+                    setAuthMode('login'); 
+                }
+
+                // 2秒後隱藏 Loader 並給予成功提示
+                setTimeout(() => {
+                    if (loader) loader.classList.add('hidden');
+                    if (typeof showCustomAlert === 'function') {
+                        showCustomAlert('註冊成功！請使用您的帳號密碼登入。');
+                    }
+                }, 2000);
+            }
+        });
+        // ==========================================
+
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
             document.getElementById('config-overlay').classList.remove('hidden');
         } else {
@@ -1279,7 +1321,21 @@
             if(pErr) { await sbClient.auth.signOut(); document.getElementById('mnemonic-modal').classList.add('hidden'); throw pErr; }
         }
 
-        function closeMnemonicModal() { document.getElementById('mnemonic-modal').classList.add('hidden'); }
+        // 關閉助記詞彈窗並重新整理
+        window.closeMnemonicModal = async function() { 
+            document.getElementById('mnemonic-modal').classList.add('hidden');
+            
+            // 確保強制登出，避免 Supabase 自動登入的快取殘留導致錯誤
+            if (sbClient) {
+                await sbClient.auth.signOut();
+            }
+            
+            // 在瀏覽器暫存標記「剛註冊完畢」
+            sessionStorage.setItem('postRegisterLoad', 'true');
+            
+            // 強制重新整理網頁
+            window.location.reload();
+        }
 
         async function handleResetPassword(email) {
             const safeEmail = email.trim(); 
