@@ -301,7 +301,7 @@
             <div id="user-sidebar-panel" class="absolute top-0 bottom-0 left-0 w-64 bg-gray-900 text-white shadow-xl transform -translate-x-full sidebar-panel flex flex-col">
                 <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <span class="text-lg font-bold tracking-wider">MENU</span>
+                        <span class="text-lg font-bold tracking-wider">選單</span>
                         <a href="#" target="_blank" class="hover:opacity-80 transition-opacity" title="彩蛋連結">
                             <div aria-label="Orange and tan hamster running in a metal wheel" role="img" class="wheel-and-hamster">
                                 <div class="wheel"></div>
@@ -332,8 +332,8 @@
                         </a>
                     </div>
                     <div>
-                        <a href="#" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
-                            <i class="ph ph-star mr-2"></i> 活動專區
+                        <a href="javascript:void(0)" onclick="toggleSidebar('user'); switchUserTab('activity')" class="text-lg font-medium text-gray-300 hover:text-white hover-underline-grow">
+                            <i class="ph ph-ticket mr-2"></i> 專屬優惠券
                         </a>
                     </div>
                     <div>
@@ -355,10 +355,10 @@
                                     <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
                                 </g>
                             </svg>
-                            <p>Log Out</p>
+                            <p>登出</p>
                         </div>
                     </div>
-                    <div class="text-xs text-gray-500 text-center">&copy; 2026 最新版冠軍永安 App</div>
+                    <div class="text-xs text-gray-500 text-center">&copy; 2026 最新版冠軍永安會員網頁</div>
                 </div>
             </div>
         </div>
@@ -371,7 +371,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box"><path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle></svg>
                             <span class="coin"></span>
                         </span>
-                        <span class="text">MENU</span>
+                        <span class="text">選單</span>
                     </button>
                     <h2 class="text-xl font-bold text-gray-800">商城</h2>
                 </div>
@@ -418,7 +418,7 @@
                         </svg>
                         <span class="coin"></span>
                     </span>
-                    <span class="text">MENU</span>
+                    <span class="text">選單</span>
                 </button>
                 <h2 class="text-xl font-bold text-gray-800">購物車與訂單</h2>
             </div>
@@ -472,6 +472,22 @@
             </div>
         </div>
 
+        <div id="tab-activity" class="flex-1 overflow-y-auto user-content-area hidden bg-gray-50">
+            <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3 border-b">
+                <button class="reward-btn" onclick="toggleSidebar('user')">
+                    <span class="IconContainer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box"><path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle></svg>
+                        <span class="coin"></span>
+                    </span>
+                    <span class="text">選單</span>
+                </button>
+                <h2 class="text-xl font-bold text-gray-800">專屬優惠券</h2>
+            </div>
+            <div class="p-4 space-y-4" id="user-coupons-container">
+                <div class="text-center text-gray-400 mt-10">載入中...</div>
+            </div>
+        </div>
+
         <div id="tab-rentals" class="flex-1 overflow-y-auto user-content-area hidden bg-gray-50">
             <div class="bg-white p-4 shadow-sm mb-2 sticky top-0 z-10 flex items-center gap-3 border-b">
                 <button class="reward-btn" onclick="toggleSidebar('user')">
@@ -479,7 +495,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 60 20" class="box-top box"><path stroke-linecap="round" stroke-width="4" stroke="#8B5CF6" d="M2 18L58 18"></path><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="20.5"></circle><circle stroke-width="5" stroke="#8B5CF6" fill="#101218" r="7" cy="9.5" cx="38.5"></circle></svg>
                         <span class="coin"></span>
                     </span>
-                    <span class="text">MENU</span>
+                    <span class="text">選單</span>
                 </button>
                 <h2 class="text-xl font-bold text-gray-800">我的場地租借</h2>
             </div>
@@ -507,7 +523,7 @@
                             </svg>
                             <span class="coin"></span>
                         </span>
-                        <span class="text">MENU</span>
+                        <span class="text">選單</span>
                     </button>
                 </div>
                 <button onclick="handleLogout()" class="absolute top-4 right-4 text-xs bg-black bg-opacity-20 px-3 py-1 rounded-full hover:bg-opacity-40 backdrop-blur-sm">登出</button>
@@ -555,7 +571,7 @@
                         </svg>
                         <span class="coin"></span>
                     </span>
-                    <span class="text">MENU</span>
+                    <span class="text">選單</span>
                 </button>
                 <h2 class="text-xl font-bold text-indigo-900">權益說明</h2>
             </div>
@@ -892,7 +908,7 @@
                         <button onclick="fetchAdminUserOrders('active')" class="admin-grid-btn text-orange-600 hover:text-orange-800"><i class="ph ph-hourglass-high"></i><span>未處理訂單</span></button>
                         <button onclick="fetchAdminUserOrders('history')" class="admin-grid-btn text-gray-500 hover:text-gray-700"><i class="ph ph-archive"></i><span>歷史訂單</span></button>
                         <button onclick="openRentalManagement()" class="admin-grid-btn text-teal-600 hover:text-teal-800 border-teal-200 hover:bg-teal-50"><i class="ph ph-tennis-ball"></i><span>場地租借</span></button>
-                        <button disabled class="admin-grid-btn"><i class="ph ph-plus"></i><span>預留功能</span></button>
+                        <button onclick="manageUserCoupons()" class="admin-grid-btn text-pink-600 hover:text-pink-800 border-pink-200 hover:bg-pink-50"><i class="ph ph-ticket"></i><span>管理優惠券</span></button>
                     </div>
                     <div id="admin-trans-form" class="hidden animate-fade-in space-y-3">
                         <div class="flex items-center justify-between mb-2"><h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-cash-register text-indigo-600"></i> 填寫交易詳情</h4><button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button></div>
@@ -907,8 +923,38 @@
                             <span class="text-xs font-bold text-red-500">現場應收現金：</span>
                             <span id="trans-actual-pay" class="text-sm font-bold text-red-600 font-mono">NT$ 0</span>
                         </div>
-                        <input type="hidden" id="hidden-calc-earned" value="0">                        <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md mt-2">確認交易</button>
+                        <input type="hidden" id="hidden-calc-earned" value="0">
+                        <button onclick="confirmTransaction()" id="btn-trans" class="w-full bg-indigo-600 text-white text-sm py-3 rounded hover:bg-indigo-700 font-bold shadow-md mt-2">確認交易</button>
                     </div>
+
+                    <div id="admin-coupon-form" class="hidden animate-fade-in space-y-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-ticket text-pink-600"></i> 發放一次性優惠券</h4>
+                            <button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">優惠券標題</label>
+                            <input type="text" id="coupon-title" placeholder="例如：生日專屬 50 元購物金" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-pink-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">使用說明/備註</label>
+                            <textarea id="coupon-desc" rows="2" placeholder="例如：限購買裝備折抵，請於結帳時出示給櫃檯人員核銷。" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-pink-500"></textarea>
+                        </div>
+                        <button onclick="submitCoupon()" id="btn-submit-coupon" class="w-full bg-pink-600 text-white text-sm py-3 rounded hover:bg-pink-700 font-bold shadow-md mt-2">確認發放</button>
+                    </div>
+
+                    <div id="admin-coupons-list-view" class="hidden animate-fade-in h-full flex flex-col">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-ticket text-pink-600"></i> 用戶優惠券</h4>
+                            <div class="flex gap-2">
+                                <button onclick="showCouponForm()" class="text-xs bg-pink-100 text-pink-600 hover:bg-pink-200 px-2 py-1 rounded font-bold">發放新優惠</button>
+                                <button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回</button>
+                            </div>
+                        </div>
+                        <div id="admin-coupons-container" class="space-y-2 overflow-y-auto max-h-[300px] p-1">
+                            </div>
+                    </div>
+
                     <div id="admin-history-view" class="hidden animate-fade-in h-full flex flex-col">
                         <div class="flex items-center justify-between mb-3"><h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-clock-counter-clockwise text-indigo-600"></i> 歷史消費紀錄</h4><button onclick="showActionMenu()" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded bg-gray-100">返回選單</button></div>
                         <div class="overflow-x-auto border rounded-lg border-gray-200"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left text-xs font-bold text-gray-500 whitespace-nowrap">日期</th><th class="px-3 py-2 text-left text-xs font-bold text-gray-500">項目</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">金額</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">折抵</th><th class="px-3 py-2 text-right text-xs font-bold text-gray-500 whitespace-nowrap">變動</th></tr></thead><tbody id="admin-history-tbody" class="bg-white divide-y divide-gray-200"></tbody></table></div>
@@ -1417,12 +1463,13 @@
                 const isActive = btn.dataset.target === target;
                 btn.classList.toggle('active', isActive); btn.classList.toggle('text-indigo-600', isActive); btn.classList.toggle('text-gray-400', !isActive);
             });
-            ['shop', 'profile', 'info', 'orders', 'rentals'].forEach(tab => {
+            ['shop', 'profile', 'info', 'orders', 'rentals', 'activity'].forEach(tab => {
                 const el = document.getElementById('tab-' + tab);
                 if(el) { if(tab === target) el.classList.remove('hidden'); else el.classList.add('hidden'); }
             });
             if(target === 'rentals') fetchUserRentals(); //當切換到租借頁面時，讀取資料
             if(target === 'orders') fetchUserOrders();
+            if(target === 'activity') fetchUserCoupons();//切換到活動專區時讀取優惠券
         }
 
         // --- Shop & Orders Logic ---
@@ -1844,7 +1891,14 @@
             document.getElementById('no-results').classList.toggle('hidden', count > 0);
         }
 
-        function showActionMenu() { document.getElementById('admin-action-menu').classList.remove('hidden'); document.getElementById('admin-trans-form').classList.add('hidden'); document.getElementById('admin-history-view').classList.add('hidden'); document.getElementById('admin-order-list-view').classList.add('hidden'); }
+        function showActionMenu() { document.getElementById('admin-action-menu').classList.remove('hidden');
+            document.getElementById('admin-trans-form').classList.add('hidden');
+            document.getElementById('admin-history-view').classList.add('hidden');
+            document.getElementById('admin-order-list-view').classList.add('hidden'); 
+            document.getElementById('admin-coupon-form').classList.add('hidden');
+            document.getElementById('admin-coupons-list-view').classList.add('hidden');
+        }
+        
         function showTransForm() { 
             document.getElementById('admin-action-menu').classList.add('hidden'); 
             document.getElementById('admin-trans-form').classList.remove('hidden'); 
@@ -1973,6 +2027,147 @@
                 </div>`;
             }).join('');
         }
+
+        // ==========================================
+        // 優惠券系統邏輯
+        // ==========================================
+
+        // (會員端) 讀取並渲染優惠券
+        async function fetchUserCoupons() {
+            if(!currentUser) return;
+            const container = document.getElementById('user-coupons-container');
+            container.innerHTML = '<div class="text-center text-gray-400 mt-10">載入中...</div>';
+
+            const { data, error } = await sbClient.from('user_coupons')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('is_used', { ascending: true }) // 未使用的排前面
+                .order('created_at', { ascending: false });
+            
+            if(error) { container.innerHTML = '<div class="text-center text-red-400 mt-10">載入錯誤</div>'; return; }
+
+            if(!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-sm p-8 text-center flex flex-col items-center justify-center h-64 border border-dashed border-gray-300">
+                        <i class="ph ph-ticket text-5xl text-gray-200 mb-3"></i>
+                        <p class="text-gray-500 font-bold">目前沒有專屬優惠券</p>
+                        <p class="text-xs text-gray-400 mt-2">請多留意球館的活動發放喔！</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = data.map(c => {
+                const isUsed = c.is_used;
+                const bgClass = isUsed ? 'bg-gray-50 opacity-60' : 'bg-white';
+                const tagClass = isUsed ? 'bg-gray-200 text-gray-500' : 'bg-pink-100 text-pink-600';
+                const tagText = isUsed ? '已核銷' : '可使用';
+                const date = new Date(c.created_at).toLocaleDateString();
+
+                return `
+                <div class="${bgClass} rounded-xl shadow-sm border ${isUsed ? 'border-gray-200' : 'border-pink-200'} overflow-hidden relative p-4 flex gap-4 items-center">
+                    <div class="w-12 h-12 rounded-full ${isUsed ? 'bg-gray-200 text-gray-400' : 'bg-pink-100 text-pink-500'} flex items-center justify-center shrink-0">
+                        <i class="ph ph-ticket text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="text-md font-bold ${isUsed ? 'text-gray-500 line-through' : 'text-gray-900'}">${c.title}</h4>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${tagClass} shrink-0">${tagText}</span>
+                        </div>
+                        <p class="text-xs ${isUsed ? 'text-gray-400' : 'text-gray-500'} mt-1">${c.description || '無詳細說明'}</p>
+                        <p class="text-[10px] text-gray-400 mt-2">發放日期: ${date}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // (管理端) 顯示發放表單
+        window.showCouponForm = function() {
+            document.getElementById('admin-action-menu').classList.add('hidden');
+            document.getElementById('admin-coupon-form').classList.remove('hidden');
+            document.getElementById('coupon-title').value = '';
+            document.getElementById('coupon-desc').value = '';
+        }
+
+        // (管理端) 確認發放優惠券寫入資料庫
+        window.submitCoupon = async function() {
+            const uid = document.getElementById('hidden-uid').value;
+            const title = document.getElementById('coupon-title').value.trim();
+            const desc = document.getElementById('coupon-desc').value.trim();
+            const btn = document.getElementById('btn-submit-coupon');
+
+            if(!title) return showCustomAlert('請輸入優惠券標題！');
+
+            btn.disabled = true; btn.innerText = '處理中...';
+
+            const { error } = await sbClient.from('user_coupons').insert([{
+                user_id: uid,
+                title: title,
+                description: desc,
+                is_used: false
+            }]);
+
+            btn.disabled = false; btn.innerText = '確認發放';
+
+            if(error) {
+                showCustomAlert('發放失敗: ' + error.message);
+            } else {
+                showCustomAlert('成功發放優惠券給該用戶！');
+                manageUserCoupons();
+            }
+        }
+
+        // (管理端) 讀取並顯示該用戶的所有優惠券
+        window.manageUserCoupons = async function() {
+            document.getElementById('admin-action-menu').classList.add('hidden');
+            document.getElementById('admin-coupon-form').classList.add('hidden');
+            document.getElementById('admin-coupons-list-view').classList.remove('hidden');
+            
+            const uid = document.getElementById('hidden-uid').value;
+            const container = document.getElementById('admin-coupons-container');
+            container.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">載入中...</div>';
+
+            const { data, error } = await sbClient.from('user_coupons')
+                .select('*')
+                .eq('user_id', uid)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = '<div class="text-center text-red-500 text-xs py-4">讀取失敗</div>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 rounded-lg">此用戶目前無優惠券</div>';
+                return;
+            }
+
+            container.innerHTML = data.map(c => `
+                <div class="bg-white border border-pink-200 shadow-sm rounded-lg p-3 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-sm text-gray-800">${c.title}</div>
+                        <div class="text-xs text-gray-500 mt-1">${c.description || '無備註'}</div>
+                    </div>
+                    <button onclick="redeemCoupon('${c.id}')" class="bg-pink-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-pink-700 active:scale-95 font-bold shadow-sm shrink-0 ml-3 transition-all">
+                        核銷
+                    </button>
+                </div>
+            `).join('');
+        };
+
+        // (管理端) 點擊核銷：直接從資料庫刪除該列
+        window.redeemCoupon = async function(couponId) {
+            if (!confirm('確定要核銷此優惠券嗎？核銷後該優惠券將永久刪除。')) return;
+
+            // 直接呼叫 Delete 刪除該筆資料
+            const { error } = await sbClient.from('user_coupons').delete().eq('id', couponId);
+
+            if (error) {
+                showCustomAlert('核銷失敗: ' + error.message);
+            } else {
+                showCustomAlert('優惠券已成功核銷！');
+                manageUserCoupons(); // 重新整理列表，讓刪除的項目消失
+            }
+        };
 
         // Updated Save Function: Saves both Order Status and Payment Status
         window.saveOrderStatus = async function(oid) {
