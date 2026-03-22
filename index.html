@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>冠軍永安羽球館-永不止步的熱愛</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -777,6 +778,16 @@
                             <i class="ph ph-chart-line-up"></i> 每日結帳報表
                         </a>
                     </div>
+                    <div>
+                        <a href="javascript:void(0)" onclick="switchAdminTab('charts')" class="text-lg font-medium text-gray-600 hover:text-indigo-600 hover-underline-grow flex items-center gap-3">
+                            <i class="ph ph-chart-pie-slice"></i> 營運統計圖表
+                        </a>
+                    </div>
+                    <div>
+                        <a href="javascript:void(0)" onclick="switchAdminTab('crm')" class="text-lg font-medium text-gray-600 hover:text-indigo-600 hover-underline-grow flex items-center gap-3">
+                            <i class="ph ph-users-three"></i> 顧客價值分析
+                        </a>
+                    </div>
                 </div>
                 <div class="p-4 border-t text-center">
                     <button onclick="handleLogout()" class="w-full py-2 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm font-bold"><i class="ph ph-sign-out"></i> 登出系統</button>
@@ -892,6 +903,65 @@
                 </div>
             </div>
         </div>
+
+        <div id="admin-tab-charts" class="flex-col h-full overflow-hidden hidden">
+            <div class="p-4 bg-white border-b shadow-sm shrink-0 space-y-4">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <label class="text-sm font-bold text-gray-600">圖表類型：</label>
+                    <select id="chart-type" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" onchange="updateChartDateUI()">
+                        <option value="1">1. 綜合指標對比 (會員/折抵/營收)</option>
+                        <option value="2">2. 年度每月總銷售額 (實收現金)</option>
+                        <option value="3">3. 指定月份每日銷售趨勢</option>
+                        <option value="4">4. 各類別營收佔比分析</option>
+                        <option value="5">5. 每月點數發放與折抵趨勢</option>
+                    </select>
+
+                    <label class="text-sm font-bold text-gray-600 ml-2">時間選擇：</label>
+                    <div id="chart-date-container"></div>
+
+                    <button onclick="generateChart()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm hover:bg-indigo-700 font-bold shadow-sm flex items-center gap-1">
+                        <i class="ph ph-magnifying-glass"></i> 查詢
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-auto p-4 bg-gray-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg shadow border border-gray-200 w-full h-full p-4 relative min-h-[400px]">
+                    <canvas id="adminChart"></canvas>
+                    <div id="chart-loading" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden z-10">
+                        <div class="flex flex-col items-center">
+                            <i class="ph ph-spinner-gap animate-spin text-4xl text-indigo-600 mb-2"></i>
+                            <span class="text-indigo-800 font-bold tracking-widest text-sm">數據分析中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-tab-crm" class="flex-col h-full overflow-y-auto hidden bg-gray-50 p-6 space-y-6">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i class="ph ph-users-three text-indigo-600"></i> RFM 顧客價值分析與自動化行銷</h2>
+            
+            <div id="crm-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                </div>
+
+            <div id="bulk-coupon-section" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hidden animate-fade-in max-w-2xl">
+                <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="ph ph-paper-plane-tilt text-indigo-600"></i> 批量發送優惠券：<span id="bulk-target-label" class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"></span>
+                </h3>
+                <input type="hidden" id="bulk-target-segment">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">優惠券標題</label>
+                        <input type="text" id="bulk-title" placeholder="例如：老友回歸！免費贈送 1 瓶礦泉水" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">使用說明/備註</label>
+                        <textarea id="bulk-desc" rows="2" placeholder="說明核銷方式或限制..." class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"></textarea>
+                    </div>
+                    <button onclick="submitBulkCoupon()" id="btn-submit-bulk" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded hover:bg-indigo-700 active:scale-95 transition shadow-sm">確認並發送</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div id="admin-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 hidden backdrop-blur-sm transition-opacity">
@@ -2459,13 +2529,14 @@ async function confirmTransaction() {
         window.closeCustomAlert = function() { document.getElementById('custom-alert-modal').classList.add('hidden'); }
 
         // --- Admin Report Logic ---
-
         // 1. 切換 Admin 分頁
         window.switchAdminTab = function(tabName) {
-            toggleSidebar('admin'); // 關閉側邊欄
-            const tabs = ['users', 'report'];
+            toggleSidebar('admin');
+            // [修改] 陣列加入 'crm'
+            const tabs = ['users', 'report', 'charts', 'crm'];
             tabs.forEach(t => {
                 const el = document.getElementById('admin-tab-' + t);
+                if (!el) return;
                 if (t === tabName) {
                     el.classList.remove('hidden');
                     el.classList.add('flex');
@@ -2475,13 +2546,275 @@ async function confirmTransaction() {
                 }
             });
 
-            // 如果切換到報表，預設載入今天
-            if (tabName === 'report') {
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('report-date').value = today;
-                generateDailyReport();
+            // 觸發對應的初始化邏輯
+            if (tabName === 'charts' && document.getElementById('chart-date-container').innerHTML === '') updateChartDateUI();
+            if (tabName === 'crm') fetchCRMData(); // [新增] 切換到 CRM 頁面時觸發讀取
+        };
+
+        // ==========================================
+        // CRM 顧客價值運算與自動化批量發送邏輯
+        // ==========================================
+        let crmDataCache = [];
+
+        window.fetchCRMData = async function() {
+            const container = document.getElementById('crm-cards-container');
+            container.innerHTML = '<div class="col-span-4 text-center text-gray-500 py-10"><i class="ph ph-spinner-gap animate-spin text-2xl"></i></div>';
+
+            const { data, error } = await sbClient.from('rfm_segments').select('*');
+            if (error) { container.innerHTML = '<div class="col-span-4 text-center text-red-500">讀取失敗</div>'; return; }
+
+            crmDataCache = data || [];
+
+            const segments = [
+                { id: '忠誠客', icon: 'ph-crown', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', desc: '近30天有消費且次數≥3' },
+                { id: '潛力客', icon: 'ph-trend-up', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', desc: '近30天有消費且次數<3' },
+                { id: '沉睡客', icon: 'ph-moon-stars', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200', desc: '超過 30 天未消費' },
+                { id: '未消費', icon: 'ph-ghost', color: 'text-gray-500', bg: 'bg-gray-100', border: 'border-gray-200', desc: '註冊後從未消費' }
+            ];
+
+            container.innerHTML = segments.map(seg => {
+                const count = crmDataCache.filter(u => u.segment === seg.id).length;
+                return `
+                <div class="bg-white rounded-lg shadow-sm border ${seg.border} p-5 flex flex-col justify-between hover:shadow-md transition">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full ${seg.bg} ${seg.color} flex items-center justify-center"><i class="ph ${seg.icon} text-xl"></i></div>
+                        <h3 class="font-bold text-gray-800">${seg.id}</h3>
+                    </div>
+                    <div class="text-4xl font-mono font-bold text-gray-900 mb-1">${count} <span class="text-sm font-normal text-gray-500">人</span></div>
+                    <p class="text-[11px] text-gray-400 mb-5 h-6">${seg.desc}</p>
+                    <button onclick="openBulkForm('${seg.id}', ${count})" class="w-full py-2 text-xs font-bold rounded ${count > 0 ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'} transition" ${count > 0 ? '' : 'disabled'}>一鍵發送</button>
+                </div>`;
+            }).join('');
+        };
+
+        window.openBulkForm = function(segment, count) {
+            if (count === 0) return;
+            document.getElementById('bulk-coupon-section').classList.remove('hidden');
+            document.getElementById('bulk-target-label').innerText = `${segment} (${count} 人)`;
+            document.getElementById('bulk-target-segment').value = segment;
+            document.getElementById('bulk-title').value = '';
+            document.getElementById('bulk-desc').value = '';
+            document.getElementById('bulk-title').focus();
+        };
+
+        window.submitBulkCoupon = async function() {
+            const segment = document.getElementById('bulk-target-segment').value;
+            const title = document.getElementById('bulk-title').value.trim();
+            const desc = document.getElementById('bulk-desc').value.trim();
+            const btn = document.getElementById('btn-submit-bulk');
+
+            if (!title) return showCustomAlert('請輸入優惠券標題');
+
+            const targets = crmDataCache.filter(u => u.segment === segment);
+            if (targets.length === 0) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i> 處理中...';
+
+            const payloads = targets.map(u => ({
+                user_id: u.user_id,
+                title: title,
+                description: desc,
+                is_used: false
+            }));
+
+            const { error } = await sbClient.from('user_coupons').insert(payloads);
+
+            btn.disabled = false;
+            btn.innerText = '確認並發送';
+
+            if (error) {
+                showCustomAlert('發送失敗: ' + error.message);
+            } else {
+                showCustomAlert(`成功發送 ${payloads.length} 張優惠券給「${segment}」！`);
+                document.getElementById('bulk-coupon-section').classList.add('hidden');
             }
         };
+
+        // 2. 圖表全域變數與動態 UI
+        let adminChartInstance = null;
+
+        window.updateChartDateUI = function() {
+            const type = document.getElementById('chart-type').value;
+            const container = document.getElementById('chart-date-container');
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().toISOString().slice(0, 7);
+
+            if (['1', '2', '5'].includes(type)) {
+                container.innerHTML = `<input type="number" id="chart-date-val" class="border border-gray-300 rounded px-3 py-1.5 text-sm font-mono w-24 text-center" value="${currentYear}" min="2024" max="2100"> <span class="text-sm font-bold text-gray-500 ml-1">年</span>`;
+            } else {
+                container.innerHTML = `<input type="month" id="chart-date-val" class="border border-gray-300 rounded px-3 py-1.5 text-sm font-mono" value="${currentMonth}">`;
+            }
+        };
+
+        // 3. 核心資料撈取與計算
+window.generateChart = async function() {
+            const type = document.getElementById('chart-type').value;
+            const dateVal = document.getElementById('chart-date-val').value;
+            const loader = document.getElementById('chart-loading');
+
+            if (!dateVal) return showCustomAlert('請選擇分析時間區間');
+            loader.classList.remove('hidden');
+
+            let startDate, endDate, yearLabel, monthLabel;
+            if (['1', '2', '5'].includes(type)) {
+                startDate = `${dateVal}-01-01T00:00:00Z`;
+                endDate = `${parseInt(dateVal) + 1}-01-01T00:00:00Z`;
+                yearLabel = dateVal;
+            } else {
+                startDate = `${dateVal}-01T00:00:00Z`;
+                let [y, m] = dateVal.split('-');
+                let nextM = parseInt(m) === 12 ? 1 : parseInt(m) + 1;
+                let nextY = parseInt(m) === 12 ? parseInt(y) + 1 : parseInt(y);
+                endDate = `${nextY}-${nextM.toString().padStart(2, '0')}-01T00:00:00Z`;
+                monthLabel = dateVal;
+            }
+
+            // [新增] 撈取散客ID清單，用以排除假點數
+            const guestRes = await sbClient.from('profiles').select('id').eq('role', 'guest');
+            const guestIds = guestRes.data ? guestRes.data.map(g => g.id) : [];
+
+            const promises = [
+                sbClient.from('point_logs').select('*').gte('created_at', startDate).lt('created_at', endDate)
+            ];
+            if (type === '1') {
+                // [修改] 必須多 select 'role' 欄位以利後續過濾
+                promises.push(sbClient.from('profiles').select('created_at, role').gte('created_at', startDate).lt('created_at', endDate));
+            }
+
+            const results = await Promise.all(promises);
+            loader.classList.add('hidden');
+
+            if (results[0].error) return showCustomAlert('資料庫讀取失敗');
+
+            const logs = results[0].data || [];
+            
+            // [新增] 過濾掉散客，不計入新增會員數量
+            const profiles = (type === '1' && !results[1].error) ? results[1].data.filter(p => p.role !== 'guest') : [];
+
+            const parsedLogs = logs.map(log => {
+                const regex = /\[([A-Z])類\]\s+(.+)\s+\$(\d+)\s+\(獲\+(\d+),\s+折-(\d+)\)/;
+                const match = log.reason ? log.reason.match(regex) : null;
+                if (match) {
+                    const isGuest = guestIds.includes(log.user_id);
+                    return {
+                        date: new Date(log.created_at),
+                        cat: match[1],
+                        totalAmt: parseInt(match[3]),
+                        // [關鍵核心]：如果是散客，點數記為 0；但實收現金營收(realPay)依然照算
+                        earned: isGuest ? 0 : parseInt(match[4]),
+                        deduct: isGuest ? 0 : parseInt(match[5]),
+                        realPay: parseInt(match[3]) - (parseInt(match[5]) * 0.5)
+                    };
+                }
+                return null;
+            }).filter(x => x !== null);
+
+            renderChartLogic(type, parsedLogs, profiles, yearLabel, monthLabel);
+        };
+        
+        // 4. Chart.js 渲染工廠
+        function renderChartLogic(type, logs, profiles, yearStr, monthStr) {
+            const ctx = document.getElementById('adminChart').getContext('2d');
+            if (adminChartInstance) adminChartInstance.destroy();
+
+            const init12Months = () => Array(12).fill(0);
+            const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+            let config = {};
+
+            if (type === '1') {
+                const members = init12Months();
+                const deducts = init12Months();
+                const revs = init12Months();
+                
+                profiles.forEach(p => members[new Date(p.created_at).getMonth()] += 1);
+                logs.forEach(l => {
+                    const m = l.date.getMonth();
+                    deducts[m] += l.deduct;
+                    revs[m] += l.realPay;
+                });
+
+                config = {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            { type: 'bar', label: '新增會員數 (人)', data: members, backgroundColor: '#3b82f6', yAxisID: 'y' },
+                            { type: 'line', label: '點數折抵數量 (點)', data: deducts, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, yAxisID: 'y' },
+                            { type: 'line', label: '實收現金營收 (NT$)', data: revs, borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.3, yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { title: { display: true, text: `${yearStr} 綜合營運指標對比` } },
+                        scales: {
+                            y: { type: 'linear', display: true, position: 'left', title: { display: true, text: '會員數 / 點數' } },
+                            y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '實收現金 (NT$)' } }
+                        }
+                    }
+                };
+            } 
+            else if (type === '2') {
+                const revs = init12Months();
+                logs.forEach(l => revs[l.date.getMonth()] += l.realPay);
+                config = {
+                    type: 'bar',
+                    data: { labels: monthLabels, datasets: [{ label: '每月實收現金 (NT$)', data: revs, backgroundColor: '#8b5cf6' }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: `${yearStr} 年度每月總銷售額` } } }
+                };
+            }
+            else if (type === '3') {
+                const [y, m] = monthStr.split('-');
+                const daysInMonth = new Date(y, m, 0).getDate();
+                const labels = Array.from({length: daysInMonth}, (_, i) => `${i + 1}日`);
+                const dailyRevs = Array(daysInMonth).fill(0);
+                
+                logs.forEach(l => { dailyRevs[l.date.getDate() - 1] += l.realPay; });
+                
+                config = {
+                    type: 'line',
+                    data: { labels: labels, datasets: [{ label: '日銷售額 (NT$)', data: dailyRevs, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: `${monthStr} 每日銷售趨勢` } } }
+                };
+            }
+            else if (type === '4') {
+                const catTotals = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0 };
+                logs.forEach(l => { if (catTotals[l.cat] !== undefined) catTotals[l.cat] += l.realPay; });
+                
+                config = {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['A (臨租)', 'B (月季租)', 'C (裝備)', 'D (穿線)', 'E (消耗品)'],
+                        datasets: [{ data: Object.values(catTotals), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6b7280', '#ef4444'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: `${monthStr} 各類別營收佔比` } } }
+                };
+            }
+            else if (type === '5') {
+                const earned = init12Months();
+                const deduct = init12Months();
+                logs.forEach(l => {
+                    const m = l.date.getMonth();
+                    earned[m] += l.earned;
+                    deduct[m] += l.deduct;
+                });
+                
+                config = {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            { label: '發放點數', data: earned, backgroundColor: '#10b981' },
+                            { label: '折抵點數', data: deduct, backgroundColor: '#ef4444' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: `${yearStr} 每月點數健康度監控` } } }
+                };
+            }
+
+            adminChartInstance = new Chart(ctx, config);
+        }
 
         // 2. 切換報表類型 (明細/統計)
         window.switchReportType = function(type) {
